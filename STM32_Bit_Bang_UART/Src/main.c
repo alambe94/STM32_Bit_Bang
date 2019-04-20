@@ -20,11 +20,12 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "soft_uart.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,6 +46,38 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+Soft_Uart_t UART1;
+char UART1_TX_Buffer[32];
+
+Soft_Uart_t UART2;
+char UART2_TX_Buffer[32];
+
+Soft_Uart_t UART3;
+char UART3_TX_Buffer[32];
+
+Soft_Uart_t UART4;
+char UART4_TX_Buffer[32];
+
+Soft_Uart_t UART5;
+char UART5_TX_Buffer[32];
+
+Soft_Uart_t UART6;
+char UART6_TX_Buffer[32];
+
+Soft_Uart_t UART7;
+char UART7_TX_Buffer[32];
+
+Soft_Uart_t UART8;
+char UART8_TX_Buffer[32];
+
+Soft_Uart_t UART9;
+char UART9_TX_Buffer[32];
+
+Soft_Uart_t UART10;
+char UART10_TX_Buffer[32];
+
+
+
 
 /* USER CODE END PV */
 
@@ -87,7 +120,39 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
+  UART1.GPIO_TX_Pin           = UART_TX1_Pin;
+  UART1.GPIO_TX_Port          = UART_TX1_GPIO_Port;
+  UART1.TX_Ring_Buffer.Buffer = UART1_TX_Buffer;
+  UART1.TX_Ring_Buffer.Size   = sizeof(UART1_TX_Buffer);
+  UART1.TX_Ring_Buffer.Read_Index = 0;
+  UART1.TX_Ring_Buffer.Write_Index = 0;
+
+  UART2.GPIO_TX_Pin           = UART_TX2_Pin;
+  UART2.GPIO_TX_Port          = UART_TX2_GPIO_Port;
+  UART2.TX_Ring_Buffer.Buffer = UART2_TX_Buffer;
+  UART2.TX_Ring_Buffer.Size   = sizeof(UART2_TX_Buffer);
+  UART2.TX_Ring_Buffer.Read_Index = 0;
+  UART2.TX_Ring_Buffer.Write_Index = 0;
+
+  UART3.GPIO_TX_Pin           = UART_TX3_Pin;
+  UART3.GPIO_TX_Port          = UART_TX3_GPIO_Port;
+  UART3.TX_Ring_Buffer.Buffer = UART3_TX_Buffer;
+  UART3.TX_Ring_Buffer.Size   = sizeof(UART3_TX_Buffer);
+  UART3.TX_Ring_Buffer.Read_Index = 0;
+  UART3.TX_Ring_Buffer.Write_Index = 0;
+
+  Soft_Uart_Init(&UART1);
+  Soft_Uart_Init(&UART2);
+  Soft_Uart_Init(&UART3);
+
+  Soft_Uart_Send_String(&UART1, "Hello World! from UART1\r\n");
+  HAL_Delay(1000);
+  Soft_Uart_Send_String(&UART2, "Hello World! from UART2\r\n");
+  HAL_Delay(1000);
+  Soft_Uart_Send_String(&UART3, "Hello World! from UART3\r\n");
+
 
   /* USER CODE END 2 */
 

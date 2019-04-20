@@ -58,6 +58,26 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define UART_TX1_Pin GPIO_PIN_3
+#define UART_TX1_GPIO_Port GPIOA
+#define UART_TX2_Pin GPIO_PIN_4
+#define UART_TX2_GPIO_Port GPIOA
+#define UART_TX3_Pin GPIO_PIN_5
+#define UART_TX3_GPIO_Port GPIOA
+#define UART_TX4_Pin GPIO_PIN_6
+#define UART_TX4_GPIO_Port GPIOA
+#define UART_TX5_Pin GPIO_PIN_7
+#define UART_TX5_GPIO_Port GPIOA
+#define UART_TX6_Pin GPIO_PIN_0
+#define UART_TX6_GPIO_Port GPIOB
+#define UART_TX7_Pin GPIO_PIN_1
+#define UART_TX7_GPIO_Port GPIOB
+#define UART_TX8_Pin GPIO_PIN_2
+#define UART_TX8_GPIO_Port GPIOB
+#define UART_TX9_Pin GPIO_PIN_10
+#define UART_TX9_GPIO_Port GPIOB
+#define UART_TX10_Pin GPIO_PIN_11
+#define UART_TX10_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
