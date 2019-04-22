@@ -49,11 +49,11 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, UART_TX1_Pin|UART_TX2_Pin|UART_TX3_Pin|UART_TX4_Pin 
-                          |UART_TX5_Pin, GPIO_PIN_RESET);
+                          |UART_TX5_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, UART_TX6_Pin|UART_TX7_Pin|UART_TX8_Pin|UART_TX9_Pin 
-                          |UART_TX10_Pin, GPIO_PIN_RESET);
+                          |UART_TX10_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : PAPin PAPin PAPin PAPin 
                            PAPin */

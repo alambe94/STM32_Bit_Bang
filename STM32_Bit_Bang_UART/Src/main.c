@@ -143,15 +143,86 @@ int main(void)
   UART3.TX_Ring_Buffer.Read_Index = 0;
   UART3.TX_Ring_Buffer.Write_Index = 0;
 
+  UART4.GPIO_TX_Pin           = UART_TX4_Pin;
+  UART4.GPIO_TX_Port          = UART_TX4_GPIO_Port;
+  UART4.TX_Ring_Buffer.Buffer = UART4_TX_Buffer;
+  UART4.TX_Ring_Buffer.Size   = sizeof(UART4_TX_Buffer);
+  UART4.TX_Ring_Buffer.Read_Index = 0;
+  UART4.TX_Ring_Buffer.Write_Index = 0;
+
+  UART5.GPIO_TX_Pin           = UART_TX5_Pin;
+  UART5.GPIO_TX_Port          = UART_TX5_GPIO_Port;
+  UART5.TX_Ring_Buffer.Buffer = UART5_TX_Buffer;
+  UART5.TX_Ring_Buffer.Size   = sizeof(UART5_TX_Buffer);
+  UART5.TX_Ring_Buffer.Read_Index = 0;
+  UART5.TX_Ring_Buffer.Write_Index = 0;
+
+  UART6.GPIO_TX_Pin           = UART_TX6_Pin;
+  UART6.GPIO_TX_Port          = UART_TX6_GPIO_Port;
+  UART6.TX_Ring_Buffer.Buffer = UART6_TX_Buffer;
+  UART6.TX_Ring_Buffer.Size   = sizeof(UART6_TX_Buffer);
+  UART6.TX_Ring_Buffer.Read_Index = 0;
+  UART6.TX_Ring_Buffer.Write_Index = 0;
+
+  UART7.GPIO_TX_Pin           = UART_TX7_Pin;
+  UART7.GPIO_TX_Port          = UART_TX7_GPIO_Port;
+  UART7.TX_Ring_Buffer.Buffer = UART7_TX_Buffer;
+  UART7.TX_Ring_Buffer.Size   = sizeof(UART7_TX_Buffer);
+  UART7.TX_Ring_Buffer.Read_Index = 0;
+  UART7.TX_Ring_Buffer.Write_Index = 0;
+
+  UART8.GPIO_TX_Pin           = UART_TX8_Pin;
+  UART8.GPIO_TX_Port          = UART_TX8_GPIO_Port;
+  UART8.TX_Ring_Buffer.Buffer = UART8_TX_Buffer;
+  UART8.TX_Ring_Buffer.Size   = sizeof(UART8_TX_Buffer);
+  UART8.TX_Ring_Buffer.Read_Index = 0;
+  UART8.TX_Ring_Buffer.Write_Index = 0;
+
+  UART9.GPIO_TX_Pin           = UART_TX9_Pin;
+  UART9.GPIO_TX_Port          = UART_TX9_GPIO_Port;
+  UART9.TX_Ring_Buffer.Buffer = UART9_TX_Buffer;
+  UART9.TX_Ring_Buffer.Size   = sizeof(UART9_TX_Buffer);
+  UART9.TX_Ring_Buffer.Read_Index = 0;
+  UART9.TX_Ring_Buffer.Write_Index = 0;
+
+  UART10.GPIO_TX_Pin           = UART_TX10_Pin;
+  UART10.GPIO_TX_Port          = UART_TX10_GPIO_Port;
+  UART10.TX_Ring_Buffer.Buffer = UART10_TX_Buffer;
+  UART10.TX_Ring_Buffer.Size   = sizeof(UART10_TX_Buffer);
+  UART10.TX_Ring_Buffer.Read_Index = 0;
+  UART10.TX_Ring_Buffer.Write_Index = 0;
+
+
   Soft_Uart_Init(&UART1);
   Soft_Uart_Init(&UART2);
   Soft_Uart_Init(&UART3);
+  Soft_Uart_Init(&UART4);
+  Soft_Uart_Init(&UART5);
+  Soft_Uart_Init(&UART6);
+  Soft_Uart_Init(&UART7);
+  Soft_Uart_Init(&UART8);
+  Soft_Uart_Init(&UART9);
+  Soft_Uart_Init(&UART10);
 
   Soft_Uart_Send_String(&UART1, "Hello World! from UART1\r\n");
-  HAL_Delay(1000);
+  //HAL_Delay(1);
   Soft_Uart_Send_String(&UART2, "Hello World! from UART2\r\n");
-  HAL_Delay(1000);
+  //HAL_Delay(1);
   Soft_Uart_Send_String(&UART3, "Hello World! from UART3\r\n");
+  //HAL_Delay(1);
+  Soft_Uart_Send_String(&UART4, "Hello World! from UART4\r\n");
+  //HAL_Delay(1);
+  Soft_Uart_Send_String(&UART5, "Hello World! from UART5\r\n");
+  //HAL_Delay(1);
+  Soft_Uart_Send_String(&UART6, "Hello World! from UART6\r\n");
+  //HAL_Delay(1);
+  Soft_Uart_Send_String(&UART7, "Hello World! from UART7\r\n");
+  //HAL_Delay(1);
+  Soft_Uart_Send_String(&UART8, "Hello World! from UART8\r\n");
+  //HAL_Delay(1);
+  Soft_Uart_Send_String(&UART9, "Hello World! from UART9\r\n");
+  //HAL_Delay(1);
+  Soft_Uart_Send_String(&UART10, "Hello World! from UART10\r\n");
 
 
   /* USER CODE END 2 */
