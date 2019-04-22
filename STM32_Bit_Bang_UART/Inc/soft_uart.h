@@ -31,7 +31,7 @@ typedef struct Soft_Uart_t
 	char    TX_Byte;
 	char    RX_Byte;
 
-	uint8_t TX_Enable;
+	uint8_t TX_Active_Flag;
 
 	uint8_t TC_Flag; //transmission complete flag
 	uint8_t RC_Flag;

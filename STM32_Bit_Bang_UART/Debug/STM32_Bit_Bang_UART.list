@@ -31,13 +31,13 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
  13 .debug_ranges 00000940  00000000  00000000  00038888  2**3
                   CONTENTS, READONLY, DEBUGGING
- 14 .debug_line   00004359  00000000  00000000  000391c8  2**0
+ 14 .debug_line   00004357  00000000  00000000  000391c8  2**0
                   CONTENTS, READONLY, DEBUGGING
- 15 .debug_str    00002e7f  00000000  00000000  0003d521  2**0
+ 15 .debug_str    00002e84  00000000  00000000  0003d51f  2**0
                   CONTENTS, READONLY, DEBUGGING
- 16 .comment      0000007c  00000000  00000000  000403a0  2**0
+ 16 .comment      0000007c  00000000  00000000  000403a3  2**0
                   CONTENTS, READONLY
- 17 .debug_frame  000013f0  00000000  00000000  0004041c  2**2
+ 17 .debug_frame  000013f0  00000000  00000000  00040420  2**2
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -2773,6 +2773,7 @@ void Soft_Uart_Init(Soft_Uart_t* uart_handle)
 	 }
     }
 
+/*9600 baud*/
 void _104us_ISR()
     {
  80010fc:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
@@ -2797,12 +2798,12 @@ void _104us_ISR()
  8001112:	b2f3      	uxtb	r3, r6
  8001114:	429a      	cmp	r2, r3
  8001116:	d806      	bhi.n	8001126 <_104us_ISR+0x2a>
-
+	    }
 
 	}
 
     // if all soft_uart are idle disable tim interrupt
-    if(!uart_active_count)
+    if (!uart_active_count)
  8001118:	2d00      	cmp	r5, #0
  800111a:	d146      	bne.n	80011aa <_104us_ISR+0xae>
 	{
@@ -2816,66 +2817,66 @@ void _104us_ISR()
  8001122:	f7ff bc2e 	b.w	8000982 <HAL_TIM_Base_Stop_IT>
 	uart_handle = Soft_Uart_List[i];
  8001126:	f859 4023 	ldr.w	r4, [r9, r3, lsl #2]
-	if(!uart_handle->TX_Enable)
+	if (!uart_handle->TX_Active_Flag)
  800112a:	f894 302a 	ldrb.w	r3, [r4, #42]	; 0x2a
  800112e:	b92b      	cbnz	r3, 800113c <_104us_ISR+0x40>
-	if (Ring_Buffer_Get_Count(ring_buffer_handle))
+	    if (Ring_Buffer_Get_Count(ring_buffer_handle))
  8001130:	4620      	mov	r0, r4
  8001132:	f7ff ffcb 	bl	80010cc <Ring_Buffer_Get_Count>
  8001136:	b1e0      	cbz	r0, 8001172 <_104us_ISR+0x76>
-	    uart_handle->TX_Enable = 1;
+		uart_handle->TX_Active_Flag = 1;
  8001138:	f884 702a 	strb.w	r7, [r4, #42]	; 0x2a
-	if(uart_handle->TX_Enable)
+	if (uart_handle->TX_Active_Flag)
  800113c:	f894 302a 	ldrb.w	r3, [r4, #42]	; 0x2a
  8001140:	b1ab      	cbz	r3, 800116e <_104us_ISR+0x72>
-	if (!(uart_handle->TX_Bit_Count)) //start bit
+	    if (!(uart_handle->TX_Bit_Count)) //start bit
  8001142:	f894 a026 	ldrb.w	sl, [r4, #38]	; 0x26
 	    uart_active_count++;
  8001146:	3501      	adds	r5, #1
  8001148:	b2ed      	uxtb	r5, r5
-	if (!(uart_handle->TX_Bit_Count)) //start bit
+	    if (!(uart_handle->TX_Bit_Count)) //start bit
  800114a:	f1ba 0f00 	cmp.w	sl, #0
  800114e:	d113      	bne.n	8001178 <_104us_ISR+0x7c>
-	    Ring_Buffer_Get_Char(ring_buffer_handle, &uart_handle->TX_Byte);
+		Ring_Buffer_Get_Char(ring_buffer_handle, &uart_handle->TX_Byte);
  8001150:	f104 0128 	add.w	r1, r4, #40	; 0x28
  8001154:	4620      	mov	r0, r4
  8001156:	f7ff ffa4 	bl	80010a2 <Ring_Buffer_Get_Char>
-	    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port, uart_handle->GPIO_TX_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
  800115a:	4652      	mov	r2, sl
  800115c:	8ba1      	ldrh	r1, [r4, #28]
-		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port, uart_handle->GPIO_TX_Pin, GPIO_PIN_RESET);
+		    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
  800115e:	69a0      	ldr	r0, [r4, #24]
  8001160:	f7ff f984 	bl	800046c <HAL_GPIO_WritePin>
-	    uart_handle->TX_Bit_Count++;
+		uart_handle->TX_Bit_Count++;
  8001164:	f894 3026 	ldrb.w	r3, [r4, #38]	; 0x26
  8001168:	3301      	adds	r3, #1
  800116a:	f884 3026 	strb.w	r3, [r4, #38]	; 0x26
  800116e:	3601      	adds	r6, #1
  8001170:	e7cd      	b.n	800110e <_104us_ISR+0x12>
-	    uart_handle->TC_Flag = 1;
+		uart_handle->TC_Flag = 1;
  8001172:	f884 702b 	strb.w	r7, [r4, #43]	; 0x2b
  8001176:	e7e1      	b.n	800113c <_104us_ISR+0x40>
-	else if (uart_handle->TX_Bit_Count < 9) //data frame
+	    else if (uart_handle->TX_Bit_Count < 9) //data frame
  8001178:	f1ba 0f08 	cmp.w	sl, #8
  800117c:	8ba1      	ldrh	r1, [r4, #28]
  800117e:	d80a      	bhi.n	8001196 <_104us_ISR+0x9a>
-	    if ((uart_handle->TX_Byte >> (uart_handle->TX_Bit_Count - 1)) & 0x01)
+		if ((uart_handle->TX_Byte >> (uart_handle->TX_Bit_Count - 1))
  8001180:	f894 3028 	ldrb.w	r3, [r4, #40]	; 0x28
  8001184:	f10a 32ff 	add.w	r2, sl, #4294967295	; 0xffffffff
  8001188:	fa43 f202 	asr.w	r2, r3, r2
  800118c:	f012 0201 	ands.w	r2, r2, #1
-		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port, uart_handle->GPIO_TX_Pin, GPIO_PIN_SET);
+		    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
  8001190:	bf18      	it	ne
  8001192:	2201      	movne	r2, #1
  8001194:	e7e3      	b.n	800115e <_104us_ISR+0x62>
-	    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port, uart_handle->GPIO_TX_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
  8001196:	2201      	movs	r2, #1
  8001198:	69a0      	ldr	r0, [r4, #24]
  800119a:	f7ff f967 	bl	800046c <HAL_GPIO_WritePin>
-	    uart_handle->TX_Bit_Count = 0;
+		uart_handle->TX_Bit_Count = 0;
  800119e:	2300      	movs	r3, #0
  80011a0:	f884 3026 	strb.w	r3, [r4, #38]	; 0x26
-	    uart_handle->TX_Enable = 0;
+		uart_handle->TX_Active_Flag = 0;
  80011a4:	f884 302a 	strb.w	r3, [r4, #42]	; 0x2a
  80011a8:	e7e1      	b.n	800116e <_104us_ISR+0x72>
  80011aa:	e8bd 87f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, pc}

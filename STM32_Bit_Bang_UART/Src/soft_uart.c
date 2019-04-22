@@ -23,6 +23,7 @@ void Soft_Uart_Init(Soft_Uart_t* uart_handle)
 	 }
     }
 
+/*9600 baud*/
 void _104us_ISR()
     {
 
@@ -36,56 +37,59 @@ void _104us_ISR()
 	uart_handle = Soft_Uart_List[i];
 	ring_buffer_handle = &uart_handle->TX_Ring_Buffer;
 
-	if(!uart_handle->TX_Enable)
+	if (!uart_handle->TX_Active_Flag)
 	    {
-	if (Ring_Buffer_Get_Count(ring_buffer_handle))
-	    {
-	    uart_handle->TX_Enable = 1;
-	    }
-	else
-	    {
-	    uart_handle->TC_Flag = 1;
-	    }
+	    if (Ring_Buffer_Get_Count(ring_buffer_handle))
+		{
+		uart_handle->TX_Active_Flag = 1;
+		}
+	    else
+		{
+		uart_handle->TC_Flag = 1;
+		}
 	    }
 
-
-	if(uart_handle->TX_Enable)
+	if (uart_handle->TX_Active_Flag)
 	    {
 
 	    uart_active_count++;
 
-	if (!(uart_handle->TX_Bit_Count)) //start bit
-	    {
-	    Ring_Buffer_Get_Char(ring_buffer_handle, &uart_handle->TX_Byte);
-	    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port, uart_handle->GPIO_TX_Pin, GPIO_PIN_RESET);
-	    uart_handle->TX_Bit_Count++;
-	    }
-	else if (uart_handle->TX_Bit_Count < 9) //data frame
-	    {
-	    if ((uart_handle->TX_Byte >> (uart_handle->TX_Bit_Count - 1)) & 0x01)
+	    if (!(uart_handle->TX_Bit_Count)) //start bit
 		{
-		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port, uart_handle->GPIO_TX_Pin, GPIO_PIN_SET);
+		Ring_Buffer_Get_Char(ring_buffer_handle, &uart_handle->TX_Byte);
+		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
+			uart_handle->GPIO_TX_Pin, GPIO_PIN_RESET);
+		uart_handle->TX_Bit_Count++;
 		}
-	    else
+	    else if (uart_handle->TX_Bit_Count < 9) //data frame
 		{
-		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port, uart_handle->GPIO_TX_Pin, GPIO_PIN_RESET);
+		if ((uart_handle->TX_Byte >> (uart_handle->TX_Bit_Count - 1))
+			& 0x01)
+		    {
+		    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
+			    uart_handle->GPIO_TX_Pin, GPIO_PIN_SET);
+		    }
+		else
+		    {
+		    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
+			    uart_handle->GPIO_TX_Pin, GPIO_PIN_RESET);
+		    }
+		uart_handle->TX_Bit_Count++;
 		}
-	    uart_handle->TX_Bit_Count++;
-	    }
-	else //stop bit
-	    {
-	    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port, uart_handle->GPIO_TX_Pin, GPIO_PIN_SET);
-	    uart_handle->TX_Bit_Count = 0;
-	    uart_handle->TX_Enable = 0;
-	    }
+	    else //stop bit
+		{
+		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
+			uart_handle->GPIO_TX_Pin, GPIO_PIN_SET);
+		uart_handle->TX_Bit_Count = 0;
+		uart_handle->TX_Active_Flag = 0;
+		}
 
 	    }
-
 
 	}
 
     // if all soft_uart are idle disable tim interrupt
-    if(!uart_active_count)
+    if (!uart_active_count)
 	{
 	HAL_TIM_Base_Stop_IT(&SOFT_UART_TIM);
 	}
