@@ -32,6 +32,7 @@ typedef struct Soft_Uart_t
 	char    RX_Byte;
 
 	uint8_t TX_Active_Flag;
+	uint8_t RX_Active_Flag;
 
 	uint8_t TC_Flag; //transmission complete flag
 	uint8_t RC_Flag;
@@ -41,6 +42,11 @@ typedef struct Soft_Uart_t
     void Soft_Uart_Init(Soft_Uart_t* handle);
     void Soft_Uart_Send_Char(Soft_Uart_t* uart_handle, char data);
     void Soft_Uart_Send_String(Soft_Uart_t* uart_handle, char* str);
+    void Soft_Uart_Start();
+    void Soft_Uart_Stop();
+    uint8_t Soft_Uart_Get_TC_Flag(Soft_Uart_t* uart_handle);
+    void Soft_Uart_Clear_TC_Flag(Soft_Uart_t* uart_handle);
+
 
 
 
