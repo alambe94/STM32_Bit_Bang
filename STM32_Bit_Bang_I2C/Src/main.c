@@ -24,6 +24,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "soft_i2c.h"
+#include "ssd1306.h"
+#include "stdlib.h"
 
 /* USER CODE END Includes */
 
@@ -45,7 +48,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+Soft_I2C_t OLED_I2C_Handle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -60,47 +63,83 @@ void SystemClock_Config(void);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
-{
-  /* USER CODE BEGIN 1 */
+    {
+    /* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
+    /* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+    /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
 
-  /* USER CODE BEGIN Init */
+    /* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
+    /* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+    /* Configure the system clock */
+    SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+    /* USER CODE BEGIN SysInit */
 
-  /* USER CODE END SysInit */
+    /* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  /* USER CODE BEGIN 2 */
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+    /* USER CODE BEGIN 2 */
+    OLED_I2C_Handle.GPIO_SCL_Port = GPIOB;
+    OLED_I2C_Handle.GPIO_SCL_Pin = GPIO_PIN_12;
+    OLED_I2C_Handle.GPIO_SDA_Port = GPIOB;
+    OLED_I2C_Handle.GPIO_SDA_Pin = GPIO_PIN_13;
 
-  /* USER CODE END 2 */
+    Soft_I2C_Init(&OLED_I2C_Handle);
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
+    ssd1306_Init();
 
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
-}
+    char temp[5];
+
+    /*********************scan for i2c devices****************************/
+    for (uint16_t i = 0; i < 128; i++)
+	{
+	itoa(i << 1, temp, 16); //int string base 16 (hex)
+
+	if (Soft_I2C_Scan(&OLED_I2C_Handle, i << 1) == SOFT_I2C_OK)
+	    {
+	    ssd1306_SetCursor(0, 30);
+	    ssd1306_WriteString("At:", Font_11x18, White);
+	    ssd1306_WriteString("0x", Font_11x18, White);
+	    ssd1306_WriteString(temp, Font_11x18, White);
+	    ssd1306_UpdateScreen();
+	    HAL_Delay(10);
+	    }
+	else
+	    {
+	    ssd1306_SetCursor(0, 0);
+	    ssd1306_WriteString("NO:", Font_11x18, White);
+	    ssd1306_WriteString("0x", Font_11x18, White);
+	    ssd1306_WriteString(temp, Font_11x18, White);
+	    ssd1306_UpdateScreen();
+	    HAL_Delay(10);
+	    }
+	}
+    /*********************scan for i2c devices****************************/
+
+    /* USER CODE END 2 */
+
+    /* Infinite loop */
+    /* USER CODE BEGIN WHILE */
+    while (1)
+	{
+	/* USER CODE END WHILE */
+
+	/* USER CODE BEGIN 3 */
+	}
+    /* USER CODE END 3 */
+    }
 
 /**
   * @brief System Clock Configuration
