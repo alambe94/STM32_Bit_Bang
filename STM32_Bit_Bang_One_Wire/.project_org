@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>STM32_Bit_Bang_I2C</name>
+	<name>STM32_Bit_Bang_One_Wire</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -66,10 +66,8 @@
 		</buildCommand>
 	</buildSpec>
 	<natures>
-		<nature>com.st.stm32cube.ide.mcu.MCUProjectNature</nature>
 		<nature>org.eclipse.cdt.core.cnature</nature>
-		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
-		<nature>com.st.stm32cube.ide.mcu.MCUTSConvertedProjectNature</nature>
+		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
 </projectDescription>
