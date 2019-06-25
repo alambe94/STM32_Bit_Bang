@@ -38,6 +38,7 @@ void Soft_Uart_Init(Soft_Uart_t* uart_handle)
 	 }
     }
 
+/**** TIM configured in cube to generate interrupt every 1/baud rate *********/
 /*9600 baud*/
 void _104us_ISR()
     {
@@ -49,8 +50,9 @@ void _104us_ISR()
 
     for (uint8_t i = 0; i < Soft_Uart_Count; i++)
 	{
-
+        /* grab uart handle from list*/
 	uart_handle = Soft_Uart_List[i];
+
 	tx_buffer_handle = &uart_handle->TX_Ring_Buffer;
 	rx_buffer_handle = &uart_handle->RX_Ring_Buffer;
 
@@ -73,25 +75,34 @@ void _104us_ISR()
 
 	    if (!(uart_handle->TX_Bit_Count)) //start bit
 		{
+
 		Ring_Buffer_Get_Char(tx_buffer_handle, &uart_handle->TX_Byte);
+
 		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
 			uart_handle->GPIO_TX_Pin, GPIO_PIN_RESET);
+
 		uart_handle->TX_Bit_Count++;
 		}
 	    else if (uart_handle->TX_Bit_Count < 9) //data frame
 		{
+
 		if ((uart_handle->TX_Byte >> (uart_handle->TX_Bit_Count - 1))
 			& 0x01)
 		    {
+
 		    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
 			    uart_handle->GPIO_TX_Pin, GPIO_PIN_SET);
+
 		    }
 		else
 		    {
+
 		    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
 			    uart_handle->GPIO_TX_Pin, GPIO_PIN_RESET);
+
 		    }
 		uart_handle->TX_Bit_Count++;
+
 		}
 	    else //stop bit
 		{
@@ -144,7 +155,7 @@ void _104us_ISR()
 
 	}
 
-    // if all soft_uart are idle disable tim interrupt
+    // if all soft_uart are idle, disable tim interrupt
     if (!uart_active_count)
 	{
 	//HAL_TIM_Base_Stop_IT(&SOFT_UART_TIM);
