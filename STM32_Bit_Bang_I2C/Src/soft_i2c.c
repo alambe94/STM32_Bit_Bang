@@ -3,399 +3,291 @@
 #include "delay_us.h"
 
 
-void Soft_I2C_SDA_High(Soft_I2C_t* i2c_handle)
-    {
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,
-	    GPIO_PIN_SET);
-    }
-
-void Soft_I2C_SDA_Low(Soft_I2C_t* i2c_handle)
-    {
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,
-	    GPIO_PIN_RESET);
-    }
-
-uint8_t Soft_I2C_SDA_Read(Soft_I2C_t* i2c_handle)
-    {
-    return HAL_GPIO_ReadPin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin);
-    }
-
-void Soft_I2C_SCL_High(Soft_I2C_t* i2c_handle)
-    {
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin,
-	    GPIO_PIN_SET);
-    }
-
-void Soft_I2C_SCL_Low(Soft_I2C_t* i2c_handle)
-    {
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin,
-	    GPIO_PIN_RESET);
-    }
-
-uint8_t Soft_I2C_SCL_Read(Soft_I2C_t* i2c_handle)
-    {
-    return HAL_GPIO_ReadPin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin);
-    }
-
-void Soft_I2C_Init(Soft_I2C_t* i2c_handle)
+void Soft_I2C_Init(Soft_I2C_t *i2c_handle)
     {
 
-    GPIO_InitTypeDef GPIO_Init;
-
-    /* GPIO Ports Clock Enable */
-    __HAL_RCC_GPIOC_CLK_ENABLE()
-    ;
-    __HAL_RCC_GPIOD_CLK_ENABLE()
-    ;
-    __HAL_RCC_GPIOA_CLK_ENABLE()
-    ;
-    __HAL_RCC_GPIOB_CLK_ENABLE()
-    ;
-    Soft_I2C_SDA_High(i2c_handle);
-    Soft_I2C_SCL_High(i2c_handle);
-
-    GPIO_Init.Mode  = GPIO_MODE_OUTPUT_OD;
-    GPIO_Init.Pull  = GPIO_PULLUP;
-    GPIO_Init.Speed = GPIO_SPEED_FREQ_MEDIUM;
-
-    GPIO_Init.Pin = i2c_handle->GPIO_SDA_Pin;
-    HAL_GPIO_Init(i2c_handle->GPIO_SDA_Port, &GPIO_Init);
-
-    GPIO_Init.Pin = i2c_handle->GPIO_SCL_Pin;
-    HAL_GPIO_Init(i2c_handle->GPIO_SCL_Port, &GPIO_Init);
     }
 
 void Soft_I2C_Delay()
     {
-    //approx 70khz scl clock
-    //Delay_us(1);
-
-    //approx 200khz scl clock on 72Mhz
-    uint32_t Ticks = HAL_RCC_GetSysClockFreq() / 1000000;
-    while (Ticks--);
 
     }
 
-
 /*generate start condition */
 
-uint8_t Soft_I2C_Start(Soft_I2C_t* i2c_handle)
+uint8_t Soft_I2C_Start(Soft_I2C_t *i2c_handle)
     {
 
-    Soft_I2C_SCL_High(i2c_handle);
-    Soft_I2C_SDA_Low(i2c_handle);
-
-    Soft_I2C_Delay();
-
-    if (Soft_I2C_SDA_Read(i2c_handle))
-	{
-	return SOFT_I2C_ERR;
-	}
-
-    return SOFT_I2C_OK;
     }
 
 /*generate stop condition */
 
-void Soft_I2C_Stop(Soft_I2C_t* i2c_handle)
+void Soft_I2C_Stop(Soft_I2C_t *i2c_handle)
     {
-    Soft_I2C_SCL_Low(i2c_handle);
-    Soft_I2C_SDA_Low(i2c_handle);
-    Soft_I2C_SCL_High(i2c_handle);
-    Soft_I2C_Delay();
-    Soft_I2C_SDA_High(i2c_handle);
+
     }
 
-uint8_t Soft_I2C_Wait_ACK(Soft_I2C_t* i2c_handle)
+uint8_t Soft_I2C_Wait_ACK(Soft_I2C_t *i2c_handle)
     {
 
-    uint16_t timeOut = 5000;
+    }
 
-    Soft_I2C_SCL_Low(i2c_handle);
-    Soft_I2C_SDA_High(i2c_handle);
-    Soft_I2C_SCL_High(i2c_handle);
-    Soft_I2C_Delay();
+void Soft_I2C_ACK(Soft_I2C_t *i2c_handle)
+    {
 
-    while (Soft_I2C_SDA_Read(i2c_handle))
+    }
+
+void Soft_I2C_NACK(Soft_I2C_t *i2c_handle)
+    {
+
+
+
+    }
+
+uint8_t Soft_I2C_Send_Byte(Soft_I2C_t *i2c_handle, uint8_t byte)
+    {
+
+
+    }
+
+uint8_t Soft_I2C_Receive_Byte(Soft_I2C_t *i2c_handle)
+    {
+
+
+
+    }
+
+uint8_t Soft_I2C_Write_Byte(Soft_I2C_t *i2c_handle, uint8_t slave_address,
+	uint8_t register_address, uint8_t *byte)
+    {
+
+
+
+    }
+
+uint8_t Soft_I2C_Read_Byte(Soft_I2C_t *i2c_handle, uint8_t slave_address,
+	uint8_t register_address, uint8_t *val)
+    {
+
+
+    }
+
+uint8_t Soft_I2C_Write_Bytes(Soft_I2C_t *i2c_handle, uint8_t slave_address,
+	uint8_t register_address, uint8_t *buf, uint8_t num)
+    {
+
+
+
+    }
+
+uint8_t Soft_I2C_Read_Bytes(Soft_I2C_t *i2c_handle, uint8_t slave_address,
+	uint8_t register_address, uint8_t *buf, uint8_t num)
+    {
+
+
+
+    }
+
+uint8_t Soft_I2C_Scan(Soft_I2C_t *i2c_handle, uint8_t slave_address)
+    {
+
+
+    }
+
+#define MAX_SOFT_I2C  10
+
+static uint8_t Soft_I2C_Count = 0;
+
+Soft_I2C_Master_t *Soft_I2C_List[MAX_SOFT_I2C];
+
+/**** TIM configured in cube to generate interrupt every 1/clk_freq rate *********/
+/*100khz freq*/
+void Soft_I2C_Master_TIM_ISR()
+    {
+
+    Soft_I2C_Master_t *i2c_handle = NULL;
+
+    uint8_t i2c_active_count = 0;
+
+    for (uint8_t i = 0; i < Soft_I2C_Count; i++)
 	{
-	timeOut--;
-	if (timeOut == 0)
+
+	i2c_active_count++;
+
+	/* grab i2c handle from list*/
+	i2c_handle = Soft_I2C_List[i];
+
+	if (i2c_handle->Active_Flag)
 	    {
-	    Soft_I2C_Stop(i2c_handle);
-	    return SOFT_I2C_ERR;
-	    }
-	}
 
-    Soft_I2C_SCL_Low(i2c_handle);
+	    if (i2c_handle->CLK_State == 1)
+		{
 
-    return SOFT_I2C_OK;
+		/*things to do when clock is high*/
+		HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port,
+			i2c_handle->GPIO_SCL_Pin, GPIO_PIN_SET);
 
-    }
+		i2c_handle->CLK_State = 0;
 
-void Soft_I2C_ACK(Soft_I2C_t* i2c_handle)
-    {
+		if (i2c_handle->State == Generate_Start)
+		    {
 
-    Soft_I2C_SCL_Low(i2c_handle);
-    Soft_I2C_SDA_Low(i2c_handle);
-    Soft_I2C_SCL_High(i2c_handle);
-    Soft_I2C_Delay();
-    Soft_I2C_SCL_Low(i2c_handle);
-    Soft_I2C_Delay();
+		    /*generate start contion*/
+		    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port,
+			    i2c_handle->GPIO_SDA_Pin, GPIO_PIN_SET);
 
-    }
+		    i2c_handle->Current_Byte = i2c_handle->Address_RW;
 
-void Soft_I2C_NACK(Soft_I2C_t* i2c_handle)
-    {
+		    i2c_handle->State = Addressing_RW;
 
-    Soft_I2C_SCL_Low(i2c_handle);
-    Soft_I2C_SDA_High(i2c_handle);
-    Soft_I2C_SCL_High(i2c_handle);
-    Soft_I2C_Delay();
-    Soft_I2C_SCL_Low(i2c_handle);
-    Soft_I2C_Delay();
+		    /*clear all error flags*/
+		    i2c_handle->Error_Flag = 0;
 
-    }
+		    }
 
-uint8_t Soft_I2C_Send_Byte(Soft_I2C_t* i2c_handle, uint8_t byte)
-    {
+		else if (i2c_handle->State == Addressing_ACK)
+		    {
 
-    uint8_t count = 8;
+		    /*check for ACK*/
+		    if (HAL_GPIO_ReadPin(i2c_handle->GPIO_SDA_Port,
+			    i2c_handle->GPIO_SDA_Pin) == GPIO_PIN_RESET)
+			{
 
-    Soft_I2C_SCL_Low(i2c_handle);
+			if ((i2c_handle->Address_RW) & 0x01)
+			    {
+			    i2c_handle->State = Data_In;
+			    }
+			else
+			    {
+			    i2c_handle->State = Data_Out;
+			    }
+			}
 
-    while (count--)
-	{
-	if (byte & 0x80)
-	    {
-	    Soft_I2C_SDA_High(i2c_handle);
-	    }
-	else
-	    {
-	    Soft_I2C_SDA_Low(i2c_handle);
-	    }
+		    else
+			{
+			i2c_handle->State = Generate_Stop;
+			i2c_handle->Error_Flag = 1;
+			}
 
-	byte <<= 1;
+		    }
 
-	Soft_I2C_SCL_High(i2c_handle);
-	Soft_I2C_Delay();
-	Soft_I2C_SCL_Low(i2c_handle);
-	Soft_I2C_Delay();
-	}
-    if (Soft_I2C_Wait_ACK(i2c_handle) == SOFT_I2C_ERR)
-	{
-	return SOFT_I2C_ERR;
-	}
-    return SOFT_I2C_OK;
-    }
+		else if (i2c_handle->State == Data_In)
+		    {
 
-uint8_t Soft_I2C_Receive_Byte(Soft_I2C_t* i2c_handle)
-    {
+		    i2c_handle->Current_Byte <<= 1;
 
-    uint8_t i = 8;
-    uint8_t ReceivedByte = 0;
+		    if (HAL_GPIO_ReadPin(i2c_handle->GPIO_SDA_Port,
+			    i2c_handle->GPIO_SDA_Pin) == GPIO_PIN_SET)
+			{
+			i2c_handle->Current_Byte |= 0x01;
+			}
 
-    Soft_I2C_SDA_High(i2c_handle);
-    while (i--)
-	{
-	ReceivedByte <<= 1;
-	Soft_I2C_SCL_Low(i2c_handle);
-	Soft_I2C_Delay();
-	Soft_I2C_SCL_High(i2c_handle);
-	Soft_I2C_Delay();
-	if (Soft_I2C_SDA_Read(i2c_handle))
-	    {
-	    ReceivedByte |= 0x01;
-	    }
-	}
-    Soft_I2C_SCL_Low(i2c_handle);
-    return ReceivedByte;
+		    i2c_handle->Bit_Count++;
+		    if (i2c_handle->Bit_Count == 8)
+			{
+			i2c_handle->Bit_Count = 0;
+			Ring_Buffer_Put_Char(&i2c_handle->Ring_Buffer,
+				i2c_handle->Current_Byte);
+			i2c_handle->Current_Byte = 0;
+			i2c_handle->Bytes_To_Read--;
 
-    }
+			if (i2c_handle->Bytes_To_Read == 0)
+			    {
+			    /*all bytes received, generate stop*/
+			    i2c_handle->State = Generate_Stop;
+			    }
+			else
+			    {
+			    /*give ack to receive next byte*/
+			    i2c_handle->State = Data_In_ACK;
+			    }
+			}
 
-uint8_t Soft_I2C_Write_Byte(Soft_I2C_t* i2c_handle,
-	                    uint8_t     slave_address,
-	                    uint8_t     register_address,
-			    uint8_t     *byte)
-    {
+		    }
 
-    if (Soft_I2C_Start(i2c_handle) == SOFT_I2C_ERR)
-	{
-	Soft_I2C_Stop(i2c_handle);
-	return SOFT_I2C_ERR;
-	}
+		if (i2c_handle->State == Generate_Stop)
+		    {
 
-    if (Soft_I2C_Send_Byte(i2c_handle, slave_address) == SOFT_I2C_ERR)
-	{
-	return SOFT_I2C_ERR;
-	}
-    if (Soft_I2C_Send_Byte(i2c_handle, register_address) == SOFT_I2C_ERR)
-	{
-	return SOFT_I2C_ERR;
-	}
+		    /*generate stop contion*/
+		    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port,
+			    i2c_handle->GPIO_SDA_Pin, GPIO_PIN_RESET);
 
-    if (byte)
-	{
-	if (Soft_I2C_Send_Byte(i2c_handle, *byte) == SOFT_I2C_ERR)
-	    {
-	    return SOFT_I2C_ERR;
-	    }
-	}
+		    i2c_handle->Active_Flag = 0;
 
-    Soft_I2C_Stop(i2c_handle);
+		    }
 
-    return SOFT_I2C_OK;
+		}
+	    else
+		{
+		/*things to do when clock is low*/
+		HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port,
+			i2c_handle->GPIO_SCL_Pin, GPIO_PIN_RESET);
 
-    }
+		if (i2c_handle->State == Addressing_RW
+			|| i2c_handle->State == Data_Out)
+		    {
 
-uint8_t Soft_I2C_Read_Byte(Soft_I2C_t* i2c_handle,
-	                   uint8_t     slave_address,
-	                   uint8_t     register_address,
-			   uint8_t     *val)
-    {
+		    /*send Current_Byte*/
+		    if (i2c_handle->Current_Byte & 0x80)
+			{
+			HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port,
+				i2c_handle->GPIO_SDA_Pin, GPIO_PIN_SET);
+			}
+		    else
+			{
+			HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port,
+				i2c_handle->GPIO_SDA_Pin, GPIO_PIN_RESET);
+			}
 
-    if (Soft_I2C_Start(i2c_handle) == SOFT_I2C_ERR)
-	{
-	Soft_I2C_Stop(i2c_handle);
-	return SOFT_I2C_ERR;
-	}
+		    i2c_handle->Current_Byte <<= 1;
 
-    if (Soft_I2C_Send_Byte(i2c_handle, slave_address) == SOFT_I2C_ERR)
-	{
-	return SOFT_I2C_ERR;
-	}
+		    i2c_handle->Bit_Count++;
 
-    if (Soft_I2C_Send_Byte(i2c_handle, register_address) == SOFT_I2C_ERR)
-	{
-	return SOFT_I2C_ERR;
-	}
+		    if (i2c_handle->Bit_Count == 8)
+			{
+			/*urrent_Byte sent*/
+			i2c_handle->Bit_Count = 0;
+			i2c_handle->Current_Byte = 0;
 
-    if (Soft_I2C_Start(i2c_handle) == SOFT_I2C_ERR) //repeated start
-	{
-	return SOFT_I2C_ERR;
-	}
+			if (i2c_handle->State == Addressing_RW)
+			    {
+			    i2c_handle->State = Addressing_ACK;
+			    }
+			else
+			    {
+			    /*grab new Current_Byte if available*/
+			    if (Ring_Buffer_Get_Count(&i2c_handle->Ring_Buffer))
+				{
+				Ring_Buffer_Get_Char(&i2c_handle->Ring_Buffer,
+					(char*) &i2c_handle->Current_Byte);
+				}
+			    else
+				{
+				/*all bytes tranfered generate stop*/
+				i2c_handle->State = Generate_Stop;
+				}
+			    }
 
-    if (Soft_I2C_Send_Byte(i2c_handle, slave_address + 1) == SOFT_I2C_ERR) //read bit
-	{
-	return SOFT_I2C_ERR;
-	}
+			}
 
-    *val = Soft_I2C_Receive_Byte(i2c_handle);
-    Soft_I2C_NACK(i2c_handle);
+		    }
 
-    Soft_I2C_Stop(i2c_handle);
+		if (i2c_handle->State == Data_In_ACK)
+		    {
+		    i2c_handle->State = Data_In;
+		    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port,
+			    i2c_handle->GPIO_SDA_Pin, GPIO_PIN_RESET);
+		    }
 
-    return SOFT_I2C_OK;
+		}
 
-    }
-
-uint8_t Soft_I2C_Write_Bytes(Soft_I2C_t* i2c_handle,
-	                     uint8_t     slave_address,
-	                     uint8_t     register_address,
-			     uint8_t     *buf,
-			     uint8_t     num)
-    {
-
-    if (Soft_I2C_Start(i2c_handle) == SOFT_I2C_ERR)
-	{
-	Soft_I2C_Stop(i2c_handle);
-	return SOFT_I2C_ERR;
-	}
-
-    if (Soft_I2C_Send_Byte(i2c_handle, slave_address) == SOFT_I2C_ERR)
-	{
-	return SOFT_I2C_ERR;
-	}
-
-    if (Soft_I2C_Send_Byte(i2c_handle, register_address) == SOFT_I2C_ERR)
-	{
-	return SOFT_I2C_ERR;
-	}
-
-    while (num--)
-	{
-	if (Soft_I2C_Send_Byte(i2c_handle, *buf++) == SOFT_I2C_ERR)
-	    {
-	    return SOFT_I2C_ERR;
 	    }
 
 	}
 
-    Soft_I2C_Stop(i2c_handle);
-
-    return SOFT_I2C_OK;
-
-    }
-
-uint8_t Soft_I2C_Read_Bytes(Soft_I2C_t* i2c_handle,
-	                    uint8_t     slave_address,
-	                    uint8_t     register_address,
-			    uint8_t     *buf,
-			    uint8_t     num)
-    {
-
-    if (Soft_I2C_Start(i2c_handle) == SOFT_I2C_ERR)
+    // if all soft_i2c are idle, disable tim interrupt
+    if (!i2c_active_count)
 	{
-	Soft_I2C_Stop(i2c_handle);
-	return SOFT_I2C_ERR;
 	}
-
-    if (Soft_I2C_Send_Byte(i2c_handle, slave_address) == SOFT_I2C_ERR)
-	{
-	return SOFT_I2C_ERR;
-	}
-
-    if (Soft_I2C_Send_Byte(i2c_handle, register_address) == SOFT_I2C_ERR)
-	{
-	return SOFT_I2C_ERR;
-	}
-
-    if (Soft_I2C_Start(i2c_handle) == SOFT_I2C_ERR) //repeated start
-	{
-	Soft_I2C_Stop(i2c_handle);
-	return SOFT_I2C_ERR;
-	}
-
-    if (Soft_I2C_Send_Byte(i2c_handle, slave_address + 1) == SOFT_I2C_ERR) //read bit
-	{
-	return SOFT_I2C_ERR;
-	}
-
-    while (num--)
-	{
-	*buf++ = Soft_I2C_Receive_Byte(i2c_handle);
-
-	if (num == 0)
-	    {
-	    Soft_I2C_NACK(i2c_handle);
-	    }
-	else
-	    {
-	    Soft_I2C_ACK(i2c_handle);
-	    }
-	}
-
-    Soft_I2C_Stop(i2c_handle);
-
-    return SOFT_I2C_OK;
-
-    }
-
-uint8_t Soft_I2C_Scan(Soft_I2C_t* i2c_handle, uint8_t slave_address)
-    {
-
-    if (Soft_I2C_Start(i2c_handle) == SOFT_I2C_ERR)
-	{
-	Soft_I2C_Stop(i2c_handle);
-	return SOFT_I2C_ERR;
-	}
-
-    if (Soft_I2C_Send_Byte(i2c_handle, slave_address) == SOFT_I2C_ERR)
-	{
-	return SOFT_I2C_ERR;
-	}
-
-    Soft_I2C_Stop(i2c_handle);
-
-    return SOFT_I2C_OK;
 
     }
