@@ -30,19 +30,19 @@ typedef struct Soft_I2C_t
 enum Soft_I2C_Master_State_t
     {
     Generate_Start,
-    Addressing_RW,
-    Addressing_ACK,
     Data_Out,
+    Read_ACK,
     Data_In,
-    Data_In_ACK,
+    Give_ACK,
     Generate_Stop
     };
 
-enum Soft_I2C_Master_Error_t
+enum Soft_I2C_Master_Flags_t
     {
-    Time_Out,
-    No_ACK,
-    AK_Ok
+    I2C_Time_Out,
+    I2C_Ok,
+    I2C_Error,
+    I2C_Busy
     };
 
 typedef struct Soft_I2C_Master_t
@@ -68,7 +68,7 @@ typedef struct Soft_I2C_Master_t
 
 	enum Soft_I2C_Master_State_t State;
 
-	uint8_t Error_Flag;
+	enum Soft_I2C_Master_Flags_t Status_Flag;
 
     } Soft_I2C_Master_t;
 
@@ -78,22 +78,26 @@ void Soft_I2C_Init(Soft_I2C_t* i2c_handle);
 uint8_t Soft_I2C_Write_Byte(Soft_I2C_t* i2c_handle,
 	                   uint8_t slave_address,
 			   uint8_t register_address,
+			   uint8_t register_address_size,
                            uint8_t *byte);
 
 uint8_t Soft_I2C_Read_Byte(Soft_I2C_t* i2c_handle,
 	                   uint8_t slave_address,
 			   uint8_t register_address,
+			   uint8_t register_address_size,
                            uint8_t *val);
 
 uint8_t Soft_I2C_Write_Bytes(Soft_I2C_t* i2c_handle,
 	                     uint8_t slave_address,
 			     uint8_t register_address,
+			     uint8_t register_address_size,
                              uint8_t *buf,
 			     uint8_t num);
 
 uint8_t Soft_I2C_Read_Bytes(Soft_I2C_t* i2c_handle,
 	                    uint8_t slave_address,
 	                    uint8_t register_address,
+			    uint8_t register_address_size,
                             uint8_t *buf,
 			    uint8_t num);
 

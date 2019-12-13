@@ -17,7 +17,7 @@ extern Soft_I2C_t OLED_I2C_Handle;
 //
  void ssd1306_WriteCommand(uint8_t command)
 {
-    if(Soft_I2C_Write_Byte(&OLED_I2C_Handle, SSD1306_I2C_ADDR,0x00,&command)==SOFT_I2C_ERR)
+    //if(Soft_I2C_Write_Byte(&OLED_I2C_Handle, SSD1306_I2C_ADDR,0x00,&command)==SOFT_I2C_ERR)
     {
 	Error_Handler();
     }
@@ -106,11 +106,11 @@ void ssd1306_UpdateScreen(void)
 		ssd1306_WriteCommand(0x10);
 
 		// We schrijven alles map per map weg
-	    if(Soft_I2C_Write_Bytes(&OLED_I2C_Handle,
-		                     SSD1306_I2C_ADDR,
-				     0x40,
-				     &SSD1306_Buffer[SSD1306_WIDTH * i],
-				     SSD1306_WIDTH) == SOFT_I2C_ERR)
+	    //if(Soft_I2C_Write_Bytes(&OLED_I2C_Handle,
+		//                     SSD1306_I2C_ADDR,
+		//		     0x40,
+		//		     &SSD1306_Buffer[SSD1306_WIDTH * i],
+		//		     SSD1306_WIDTH) == SOFT_I2C_ERR)
 	    {
 		Error_Handler();
 	    }

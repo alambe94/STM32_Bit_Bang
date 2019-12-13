@@ -12,13 +12,12 @@
 #include "main.h"
 #include "ring_buffer.h"
 
-typedef  Ring_Buffer_t Uart_Ring_Buffer;
 
 typedef struct Soft_Uart_t
     {
 
-        Uart_Ring_Buffer TX_Ring_Buffer;
-        Uart_Ring_Buffer RX_Ring_Buffer;
+        Ring_Buffer_t TX_Ring_Buffer;
+        Ring_Buffer_t RX_Ring_Buffer;
 
 	GPIO_TypeDef* GPIO_TX_Port;
 	uint16_t GPIO_TX_Pin;
