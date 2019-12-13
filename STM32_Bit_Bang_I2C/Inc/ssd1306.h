@@ -18,7 +18,7 @@
 #define ssd1306
 
 // I2C address 
-#define SSD1306_I2C_ADDR        0x78
+#define SSD1306_I2C_ADDR        0x78 // (0X3C << 1)
 // SSD1306 width in pixels
 #define SSD1306_WIDTH           128
 // SSD1306 LCD height in pixels

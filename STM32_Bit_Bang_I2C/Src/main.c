@@ -49,7 +49,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-Soft_I2C_t OLED_I2C_Handle;
+Soft_I2C_Master_t OLED_I2C_Handle;
+char I2C1_Buffer[256];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,14 +95,39 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-    OLED_I2C_Handle.GPIO_SCL_Port = GPIOB;
-    OLED_I2C_Handle.GPIO_SCL_Pin = GPIO_PIN_12;
-    OLED_I2C_Handle.GPIO_SDA_Port = GPIOB;
-    OLED_I2C_Handle.GPIO_SDA_Pin = GPIO_PIN_13;
 
-    //Soft_I2C_Init(&OLED_I2C_Handle);
+  Soft_I2C_Master_Init();
+
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  OLED_I2C_Handle.GPIO_SCL_Pin        = GPIO_PIN_6;
+  OLED_I2C_Handle.GPIO_SCL_Port       = GPIOA;
+  OLED_I2C_Handle.GPIO_SDA_Pin        = GPIO_PIN_5;
+  OLED_I2C_Handle.GPIO_SDA_Port       = GPIOA;
+  OLED_I2C_Handle.I2C_Buffer.Buffer   = I2C1_Buffer;
+  OLED_I2C_Handle.I2C_Buffer.Size     = sizeof(I2C1_Buffer);
+
+  Soft_I2C_Master_Add(&OLED_I2C_Handle);
+
 
     ssd1306_Init();
+
+    while (1)
+	{
+	    ssd1306_Fill(White);
+	    ssd1306_UpdateScreen();
+	    ssd1306_Fill(Black);
+	    ssd1306_UpdateScreen();
+	    ssd1306_Fill(White);
+	    ssd1306_UpdateScreen();
+	    ssd1306_Fill(Black);
+	    ssd1306_UpdateScreen();
+	    ssd1306_Fill(White);
+	    ssd1306_UpdateScreen();
+	    ssd1306_Fill(Black);
+	    ssd1306_UpdateScreen();
+	}
+
 
     char temp[5];
 
@@ -110,26 +136,27 @@ int main(void)
 	{
 	itoa(i << 1, temp, 16); //int string base 16 (hex)
 
-	//if (Soft_I2C_Scan(&OLED_I2C_Handle, i << 1) == SOFT_I2C_OK)
+	Soft_I2C_Master_Scan(&OLED_I2C_Handle, i << 1);
+	while (Soft_I2C_Master_Get_Status(&OLED_I2C_Handle) == I2C_Busy);
+
+	if (Soft_I2C_Master_Get_Status(&OLED_I2C_Handle) == I2C_Ok)
 	    {
 	    ssd1306_SetCursor(0, 30);
 	    ssd1306_WriteString("At:", Font_11x18, White);
 	    ssd1306_WriteString("0x", Font_11x18, White);
 	    ssd1306_WriteString(temp, Font_11x18, White);
-	    ssd1306_UpdateScreen();
-	    HAL_Delay(10);
 	    }
-	//else
+	else
 	    {
 	    ssd1306_SetCursor(0, 0);
 	    ssd1306_WriteString("NO:", Font_11x18, White);
 	    ssd1306_WriteString("0x", Font_11x18, White);
 	    ssd1306_WriteString(temp, Font_11x18, White);
-	    ssd1306_UpdateScreen();
-	    HAL_Delay(10);
 	    }
+	HAL_Delay(1);
+	ssd1306_UpdateScreen();
 	}
-    /*********************scan for i2c devices****************************/
+
 
   /* USER CODE END 2 */
 
@@ -140,6 +167,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
 	}
   /* USER CODE END 3 */
 }
