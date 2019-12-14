@@ -136,80 +136,60 @@ int main(void)
   UART1.GPIO_TX_Port          = UART_TX1_GPIO_Port;
   UART1.TX_Ring_Buffer.Buffer = UART1_TX_Buffer;
   UART1.TX_Ring_Buffer.Size   = sizeof(UART1_TX_Buffer);
-  UART1.RX_Ring_Buffer.Buffer = UART1_RX_Buffer;
-  UART1.RX_Ring_Buffer.Size   = sizeof(UART1_RX_Buffer);
 
 
   UART2.GPIO_TX_Pin           = UART_TX2_Pin;
   UART2.GPIO_TX_Port          = UART_TX2_GPIO_Port;
   UART2.TX_Ring_Buffer.Buffer = UART2_TX_Buffer;
   UART2.TX_Ring_Buffer.Size   = sizeof(UART2_TX_Buffer);
-  UART2.RX_Ring_Buffer.Buffer = UART2_RX_Buffer;
-  UART2.RX_Ring_Buffer.Size   = sizeof(UART2_RX_Buffer);
 
 
   UART3.GPIO_TX_Pin           = UART_TX3_Pin;
   UART3.GPIO_TX_Port          = UART_TX3_GPIO_Port;
   UART3.TX_Ring_Buffer.Buffer = UART3_TX_Buffer;
   UART3.TX_Ring_Buffer.Size   = sizeof(UART3_TX_Buffer);
-  UART3.RX_Ring_Buffer.Buffer = UART3_RX_Buffer;
-  UART3.RX_Ring_Buffer.Size   = sizeof(UART3_RX_Buffer);
 
 
   UART4.GPIO_TX_Pin           = UART_TX4_Pin;
   UART4.GPIO_TX_Port          = UART_TX4_GPIO_Port;
   UART4.TX_Ring_Buffer.Buffer = UART4_TX_Buffer;
   UART4.TX_Ring_Buffer.Size   = sizeof(UART4_TX_Buffer);
-  UART4.RX_Ring_Buffer.Buffer = UART4_RX_Buffer;
-  UART4.RX_Ring_Buffer.Size   = sizeof(UART4_RX_Buffer);
 
 
   UART5.GPIO_TX_Pin           = UART_TX5_Pin;
   UART5.GPIO_TX_Port          = UART_TX5_GPIO_Port;
   UART5.TX_Ring_Buffer.Buffer = UART5_TX_Buffer;
   UART5.TX_Ring_Buffer.Size   = sizeof(UART5_TX_Buffer);
-  UART5.RX_Ring_Buffer.Buffer = UART5_RX_Buffer;
-  UART5.RX_Ring_Buffer.Size   = sizeof(UART5_RX_Buffer);
 
 
   UART6.GPIO_TX_Pin           = UART_TX6_Pin;
   UART6.GPIO_TX_Port          = UART_TX6_GPIO_Port;
   UART6.TX_Ring_Buffer.Buffer = UART6_TX_Buffer;
   UART6.TX_Ring_Buffer.Size   = sizeof(UART6_TX_Buffer);
-  UART6.RX_Ring_Buffer.Buffer = UART6_RX_Buffer;
-  UART6.RX_Ring_Buffer.Size   = sizeof(UART6_RX_Buffer);
 
 
   UART7.GPIO_TX_Pin           = UART_TX7_Pin;
   UART7.GPIO_TX_Port          = UART_TX7_GPIO_Port;
   UART7.TX_Ring_Buffer.Buffer = UART7_TX_Buffer;
   UART7.TX_Ring_Buffer.Size   = sizeof(UART7_TX_Buffer);
-  UART7.RX_Ring_Buffer.Buffer = UART7_RX_Buffer;
-  UART7.RX_Ring_Buffer.Size   = sizeof(UART7_RX_Buffer);
 
 
   UART8.GPIO_TX_Pin           = UART_TX8_Pin;
   UART8.GPIO_TX_Port          = UART_TX8_GPIO_Port;
   UART8.TX_Ring_Buffer.Buffer = UART8_TX_Buffer;
   UART8.TX_Ring_Buffer.Size   = sizeof(UART8_TX_Buffer);
-  UART8.RX_Ring_Buffer.Buffer = UART8_RX_Buffer;
-  UART8.RX_Ring_Buffer.Size   = sizeof(UART8_RX_Buffer);
 
 
   UART9.GPIO_TX_Pin           = UART_TX9_Pin;
   UART9.GPIO_TX_Port          = UART_TX9_GPIO_Port;
   UART9.TX_Ring_Buffer.Buffer = UART9_TX_Buffer;
   UART9.TX_Ring_Buffer.Size   = sizeof(UART9_TX_Buffer);
-  UART9.RX_Ring_Buffer.Buffer = UART9_RX_Buffer;
-  UART9.RX_Ring_Buffer.Size   = sizeof(UART9_RX_Buffer);
 
 
   UART10.GPIO_TX_Pin           = UART_TX10_Pin;
   UART10.GPIO_TX_Port          = UART_TX10_GPIO_Port;
   UART10.TX_Ring_Buffer.Buffer = UART10_TX_Buffer;
   UART10.TX_Ring_Buffer.Size   = sizeof(UART10_TX_Buffer);
-  UART10.RX_Ring_Buffer.Buffer = UART10_RX_Buffer;
-  UART10.RX_Ring_Buffer.Size   = sizeof(UART10_RX_Buffer);
 
 
 

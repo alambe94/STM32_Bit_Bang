@@ -3,10 +3,10 @@
   <FileVersion>3.0</FileVersion>
   <Workspace>
     <WorkspaceType>Single-project</WorkspaceType>
-    <WorkspacePath>/home/medprime/Documents/Projects/alsaad/Cube/WorkSpace/STM32_Bit_Bang/STM32_Bit_Bang_I2C/</WorkspacePath>
+    <WorkspacePath>C:\Users\lambe\OneDrive\Desktop\STM32_Bit_Bang\STM32_Bit_Bang_I2C\</WorkspacePath>
     <underRoot>true</underRoot>
     <TrustZone>0</TrustZone>
-    <HAL_Driver>/home/medprime/STM32Cube/Repository//STM32Cube_FW_F1_V1.8.0</HAL_Driver>
+    <HAL_Driver>C:\Users\lambe\STM32Cube\Repository\STM32Cube_FW_F1_V1.8.0</HAL_Driver>
     <CMSIS>Drivers/CMSIS</CMSIS>
     <Toolchain>STM32CubeIDE</Toolchain>
     <IocFile>STM32_Bit_Bang_I2C.ioc</IocFile>
@@ -30,7 +30,7 @@
             <memory access="xrw" name="RAM" size="20" start="0x20000000"/>
             <memory access="rx" name="FLASH" size="64" start="0x8000000"/>
           </memories>
-          <startup>/home/medprime/STM32Cube/Repository//STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device\ST\STM32F1xx\Source\Templates\gcc\startup_stm32f103xb.s</startup>
+          <startup>C:\Users\lambe\STM32Cube\Repository\STM32Cube_FW_F1_V1.8.0\Drivers\CMSIS\Device\ST\STM32F1xx\Source\Templates\gcc\startup_stm32f103xb.s</startup>
           <LinkSettings>
             <LinkAdditionalLibs/>
           </LinkSettings>
@@ -50,10 +50,10 @@
           <Ldefines/>
           <Cincludes>
             <include>Inc</include>
-            <include>Drivers/STM32F1xx_HAL_Driver/Inc</include>
-            <include>Drivers/STM32F1xx_HAL_Driver/Inc/Legacy</include>
-            <include>Drivers/CMSIS/Device/ST/STM32F1xx/Include</include>
-            <include>Drivers/CMSIS/Include</include>
+            <include>Drivers\STM32F1xx_HAL_Driver\Inc</include>
+            <include>Drivers\STM32F1xx_HAL_Driver\Inc\Legacy</include>
+            <include>Drivers\CMSIS\Device\ST\STM32F1xx\Include</include>
+            <include>Drivers\CMSIS\Include</include>
           </Cincludes>
           <definestoremove>
             <Adefines/>

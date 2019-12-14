@@ -28,7 +28,6 @@ typedef enum Soft_I2C_Master_State_t
 
 typedef enum Soft_I2C_Master_Flags_t
     {
-    I2C_Time_Out,
     I2C_Ok,
     I2C_Error,
     I2C_Busy

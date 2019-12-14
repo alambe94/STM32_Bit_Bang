@@ -785,4 +785,3 @@ void Soft_I2C_Master_Scan(Soft_I2C_Master_t *i2c_handle,
 	Soft_I2C_Delay();
 	}
     }
-

@@ -17,13 +17,6 @@ void Soft_Uart_Init(Soft_Uart_t *uart_handle)
     if (Soft_Uart_Count < MAX_SOFT_UART)
 	{
 
-	uart_handle->RC_Flag = 0;
-	uart_handle->RX_Active_Flag = 0;
-	uart_handle->RX_Bit_Count = 0;
-	uart_handle->RX_Byte = 0x00;
-	uart_handle->RX_Ring_Buffer.Read_Index = 0;
-	uart_handle->RX_Ring_Buffer.Write_Index = 0;
-
 	uart_handle->TC_Flag = 0;
 	uart_handle->TX_Active_Flag = 0;
 	uart_handle->TX_Bit_Count = 0;
@@ -35,6 +28,80 @@ void Soft_Uart_Init(Soft_Uart_t *uart_handle)
 	Soft_Uart_Count++;
 	}
     }
+
+
+static void Soft_Uart_TX_High(Soft_Uart_t *uart_handle)
+    {
+    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port, uart_handle->GPIO_TX_Pin,
+	    GPIO_PIN_SET);
+    }
+
+static void Soft_Uart_TX_Low(Soft_Uart_t *uart_handle)
+    {
+    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port, uart_handle->GPIO_TX_Pin,
+	    GPIO_PIN_RESET);
+    }
+
+static void Soft_Uart_TX_State_Machine(Soft_Uart_t *uart_handle)
+    {
+
+    if (uart_handle->State == Idle)
+	{
+
+	if (Ring_Buffer_Get_Count(&uart_handle->TX_Ring_Buffer))
+	    {
+	    uart_handle->TC_Flag = 0;
+	    uart_handle->TX_Bit_Count = 0;
+	    uart_handle->State = Send_Start_Bit;
+	    Ring_Buffer_Get_Char(&uart_handle->TX_Ring_Buffer,
+		    (char*)&uart_handle->TX_Byte);
+	    }
+	else
+	    {
+	    uart_handle->TX_Active_Flag = 0;
+	    uart_handle->TC_Flag = 1;
+	    }
+
+	}
+    else if (uart_handle->State == Send_Start_Bit)
+	{
+	Soft_Uart_TX_Low(uart_handle);
+	uart_handle->State = Send_Byte;
+	}
+    else if (uart_handle->State == Send_Byte)
+	{
+
+	if (uart_handle->TX_Byte & 0x01)
+	    {
+	    Soft_Uart_TX_High(uart_handle);
+	    }
+	else
+	    {
+	    Soft_Uart_TX_Low(uart_handle);
+	    }
+
+	uart_handle->TX_Byte >>= 1;
+	uart_handle->TX_Bit_Count++;
+
+	if (uart_handle->TX_Bit_Count == 8)
+	    {
+	    uart_handle->TX_Bit_Count = 0;
+	    uart_handle->State = Send_Stop_Bit;
+	    }
+
+	}
+    else if (uart_handle->State == Send_Parity_Bit)
+	{
+	/*not implemented yet*/
+	}
+    else if (uart_handle->State == Send_Stop_Bit)
+	{
+	Soft_Uart_TX_High(uart_handle);
+	uart_handle->State = Idle;
+	}
+
+    }
+
 
 /**** TIM configured in cube to generate interrupt every 1/baud rate *********/
 /*9600 baud*/
@@ -50,62 +117,12 @@ void Soft_Uart_TIM_ISR()
 	/* grab uart handle from list*/
 	uart_handle = Soft_Uart_List[i];
 
-	if (!uart_handle->TX_Active_Flag)
-	    {
-	    if (Ring_Buffer_Get_Count(&uart_handle->TX_Ring_Buffer))
-		{
-		uart_handle->TX_Active_Flag = 1;
-		}
-	    else
-		{
-		uart_handle->TC_Flag = 1;
-		}
-	    }
-
 	if (uart_handle->TX_Active_Flag)
 	    {
 
 	    uart_active_count++;
 
-	    if (!(uart_handle->TX_Bit_Count)) //start bit
-		{
-
-		Ring_Buffer_Get_Char(&uart_handle->TX_Ring_Buffer,
-			&uart_handle->TX_Byte);
-
-		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
-			uart_handle->GPIO_TX_Pin, GPIO_PIN_RESET);
-
-		uart_handle->TX_Bit_Count++;
-		}
-	    else if (uart_handle->TX_Bit_Count < 9) //data frame
-		{
-
-		if ((uart_handle->TX_Byte >> (uart_handle->TX_Bit_Count - 1))
-			& 0x01)
-		    {
-
-		    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
-			    uart_handle->GPIO_TX_Pin, GPIO_PIN_SET);
-
-		    }
-		else
-		    {
-
-		    HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
-			    uart_handle->GPIO_TX_Pin, GPIO_PIN_RESET);
-
-		    }
-		uart_handle->TX_Bit_Count++;
-
-		}
-	    else //stop bit
-		{
-		HAL_GPIO_WritePin(uart_handle->GPIO_TX_Port,
-			uart_handle->GPIO_TX_Pin, GPIO_PIN_SET);
-		uart_handle->TX_Bit_Count = 0;
-		uart_handle->TX_Active_Flag = 0;
-		}
+	    Soft_Uart_TX_State_Machine(uart_handle);
 	    }
 
 	}

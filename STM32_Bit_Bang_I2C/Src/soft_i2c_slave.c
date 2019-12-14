@@ -2,42 +2,60 @@
 #include "stm32f1xx_hal.h"
 #include "delay_us.h"
 
+#define MAX_SOFT_I2C_SLAVE  8 /* max 8 possible with 16 interrupts lines on stm32*/
+
+static Soft_I2C_Slave_t *Soft_I2C_Slave_List[MAX_SOFT_I2C_SLAVE];
+static uint8_t Soft_I2C_Slave_Count = 0;
+
 /* add a new instance of soft i2c slave to state machine*/
-void Soft_I2C_Slave_Init(Soft_I2C_Slave_t *i2c_handle)
+void Soft_I2C_Slave_Add(Soft_I2C_Slave_t *i2c_handle)
     {
 
-    i2c_handle->Active_Flag = 0;
-    i2c_handle->State = Detect_Start;
-    i2c_handle->Buffer_Index = 0;
-    i2c_handle->Current_Byte = 0;
+    if (Soft_I2C_Slave_Count < MAX_SOFT_I2C_SLAVE)
+	{
+	i2c_handle->Active_Flag = 0;
+	i2c_handle->State = Detect_Start;
+	i2c_handle->Buffer_Index = 0;
+	i2c_handle->Current_Byte = 0;
 
-    GPIO_InitTypeDef GPIO_InitStruct;
+	GPIO_InitTypeDef GPIO_InitStruct;
 
-    /* GPIO Ports Clock Enable */
-    //__HAL_RCC_GPIOA_CLK_ENABLE();
-    //__HAL_RCC_GPIOB_CLK_ENABLE();
-    //__HAL_RCC_GPIOC_CLK_ENABLE();
-    //__HAL_RCC_GPIOD_CLK_ENABLE();
-    //__HAL_RCC_GPIOE_CLK_ENABLE();
-    //__HAL_RCC_GPIOF_CLK_ENABLE();
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin,
-	    GPIO_PIN_SET);
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,
-	    GPIO_PIN_SET);
+	/* GPIO Ports Clock Enable */
+	//__HAL_RCC_GPIOA_CLK_ENABLE();
+	//__HAL_RCC_GPIOB_CLK_ENABLE();
+	//__HAL_RCC_GPIOC_CLK_ENABLE();
+	//__HAL_RCC_GPIOD_CLK_ENABLE();
+	//__HAL_RCC_GPIOE_CLK_ENABLE();
+	//__HAL_RCC_GPIOF_CLK_ENABLE();
 
-    GPIO_InitStruct.Pin = i2c_handle->GPIO_SCL_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-    HAL_GPIO_Init(i2c_handle->GPIO_SCL_Port, &GPIO_InitStruct);
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin,
+		GPIO_PIN_SET);
+	HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,
+		GPIO_PIN_SET);
 
-    GPIO_InitStruct.Pin = i2c_handle->GPIO_SDA_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-    HAL_GPIO_Init(i2c_handle->GPIO_SDA_Port, &GPIO_InitStruct);
+	GPIO_InitStruct.Pin = i2c_handle->GPIO_SCL_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+	HAL_GPIO_Init(i2c_handle->GPIO_SCL_Port, &GPIO_InitStruct);
 
+	GPIO_InitStruct.Pin = i2c_handle->GPIO_SDA_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+	HAL_GPIO_Init(i2c_handle->GPIO_SDA_Port, &GPIO_InitStruct);
+
+	//HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+	//HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+	//HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+	//HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+	Soft_I2C_Slave_List[Soft_I2C_Slave_Count] = i2c_handle;
+	Soft_I2C_Slave_Count++;
+
+	}
     }
 
 static void Soft_I2C_SDA_High(Soft_I2C_Slave_t *i2c_handle)
@@ -336,6 +354,30 @@ static void Soft_I2C_Slave_State_Machine_SCL_ISR(Soft_I2C_Slave_t *i2c_handle)
 	    i2c_handle->Current_Byte <<= 1;
 
 	    i2c_handle->Bit_Count++;
+	    }
+
+	}
+
+    }
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+    {
+
+    Soft_I2C_Slave_t *i2c_handle = NULL;
+
+    for (uint8_t i = 0; i < Soft_I2C_Slave_Count; i++)
+	{
+	/* grab i2c handle from list*/
+	i2c_handle = Soft_I2C_Slave_List[i];
+
+	if (GPIO_Pin == i2c_handle->GPIO_SDA_Pin)
+	    {
+	    Soft_I2C_Slave_State_Machine_SDA_ISR(i2c_handle);
+	    }
+
+	if (GPIO_Pin == i2c_handle->GPIO_SCL_Pin)
+	    {
+	    Soft_I2C_Slave_State_Machine_SCL_ISR(i2c_handle);
 	    }
 
 	}
