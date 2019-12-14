@@ -567,7 +567,7 @@ void Soft_I2C_Master_Scan_IT(Soft_I2C_Master_t *i2c_handle,
 
 void Soft_I2C_Delay()
     {
-    Delay_us(10); /*adjust i2c clk frequency */
+    Delay_us(5); /*adjust i2c clk frequency */
     }
 
 void Soft_I2C_Master_Write_Byte(Soft_I2C_Master_t *i2c_handle,
