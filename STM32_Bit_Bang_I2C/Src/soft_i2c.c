@@ -364,17 +364,11 @@ void Soft_I2C_Master_Stop()
     HAL_TIM_Base_Stop_IT(SOFT_I2C_MASTER_TIM);
     }
 
-
-
-void Soft_I2C_Delay()
-    {
-    }
-
-void Soft_I2C_Master_Write_Byte(Soft_I2C_Master_t *i2c_handle,
-	                        uint8_t slave_address,
-	                        uint16_t register_address,
-	                        uint8_t register_address_size,
-				uint8_t *byte)
+void Soft_I2C_Master_Write_Byte_IT(Soft_I2C_Master_t *i2c_handle,
+	                           uint8_t slave_address,
+	                           uint16_t register_address,
+	                           uint8_t register_address_size,
+				   uint8_t *byte)
     {
     i2c_handle->I2C_Buffer = byte;
 
@@ -409,10 +403,10 @@ void Soft_I2C_Master_Write_Byte(Soft_I2C_Master_t *i2c_handle,
     }
 
 /*set the read pointer in slave to read from*/
-void Soft_I2C_Master_Write_Dummy(Soft_I2C_Master_t *i2c_handle,
-	                         uint8_t slave_address,
-	                         uint16_t register_address,
-	                         uint8_t register_address_size)
+void Soft_I2C_Master_Write_Dummy_IT(Soft_I2C_Master_t *i2c_handle,
+	                            uint8_t slave_address,
+	                            uint16_t register_address,
+	                            uint8_t register_address_size)
     {
     i2c_handle->I2C_Buffer = NULL;
 
@@ -447,9 +441,9 @@ void Soft_I2C_Master_Write_Dummy(Soft_I2C_Master_t *i2c_handle,
 
     }
 
-void Soft_I2C_Master_Read_Byte(Soft_I2C_Master_t *i2c_handle,
-	                       uint8_t slave_address,
-			       uint8_t *data)
+void Soft_I2C_Master_Read_Byte_IT(Soft_I2C_Master_t *i2c_handle,
+	                          uint8_t slave_address,
+			          uint8_t *data)
     {
     i2c_handle->I2C_Buffer = data;
 
@@ -473,7 +467,7 @@ void Soft_I2C_Master_Read_Byte(Soft_I2C_Master_t *i2c_handle,
     HAL_TIM_Base_Start_IT(SOFT_I2C_MASTER_TIM);
     }
 
-void Soft_I2C_Master_Write_Bytes(Soft_I2C_Master_t *i2c_handle,
+void Soft_I2C_Master_Write_Bytes_IT(Soft_I2C_Master_t *i2c_handle,
 	                         uint8_t slave_address,
 	                         uint16_t register_address,
 				 uint8_t register_address_size,
@@ -512,7 +506,7 @@ void Soft_I2C_Master_Write_Bytes(Soft_I2C_Master_t *i2c_handle,
     HAL_TIM_Base_Start_IT(SOFT_I2C_MASTER_TIM);
     }
 
-void  Soft_I2C_Master_Read_Bytes(Soft_I2C_Master_t *i2c_handle,
+void  Soft_I2C_Master_Read_Bytes_IT(Soft_I2C_Master_t *i2c_handle,
 	                         uint8_t slave_address,
 				 uint8_t *data,
 				 uint8_t len)
@@ -540,8 +534,8 @@ void  Soft_I2C_Master_Read_Bytes(Soft_I2C_Master_t *i2c_handle,
     }
 
 /*check if slave responding*/
-void Soft_I2C_Master_Scan(Soft_I2C_Master_t *i2c_handle,
-	                  uint8_t slave_address)
+void Soft_I2C_Master_Scan_IT(Soft_I2C_Master_t *i2c_handle,
+	                     uint8_t slave_address)
     {
 
     i2c_handle->I2C_Buffer = NULL;
@@ -567,5 +561,228 @@ void Soft_I2C_Master_Scan(Soft_I2C_Master_t *i2c_handle,
     /*enable TIM to start transaction */
     HAL_TIM_Base_Start_IT(SOFT_I2C_MASTER_TIM);
 
+    }
+
+
+
+void Soft_I2C_Delay()
+    {
+    Delay_us(10); /*adjust i2c clk frequency */
+    }
+
+void Soft_I2C_Master_Write_Byte(Soft_I2C_Master_t *i2c_handle,
+	                        uint8_t slave_address,
+	                        uint16_t register_address,
+	                        uint8_t register_address_size,
+				uint8_t *byte)
+    {
+    i2c_handle->I2C_Buffer = byte;
+
+    i2c_handle->Buffer_Index = 0;
+
+    i2c_handle->Address_RW = slave_address;
+
+    if (register_address_size == 2)
+	{
+	/* msb of register address if address is of two bytes*/
+	i2c_handle->MEM_Address[1] = (register_address >> 8);
+	}
+
+    i2c_handle->MEM_Address[0] = register_address;
+
+    i2c_handle->MEM_Address_Count= register_address_size;
+
+    i2c_handle->Byte_Count = 1;
+
+    i2c_handle->Bit_Count = 0;
+
+    i2c_handle->Current_Byte = 0;
+
+    i2c_handle->Active_Flag = 1;
+
+    i2c_handle->State = Generate_Start;
+
+    i2c_handle->Status_Flag = I2C_Busy;
+
+    while(i2c_handle->Active_Flag)
+	{
+	Soft_I2C_Master_State_Machine(i2c_handle);
+	Soft_I2C_Delay();
+	}
+
+    }
+
+/*set the read pointer in slave to read from*/
+void Soft_I2C_Master_Write_Dummy(Soft_I2C_Master_t *i2c_handle,
+	                         uint8_t slave_address,
+	                         uint16_t register_address,
+	                         uint8_t register_address_size)
+    {
+    i2c_handle->I2C_Buffer = NULL;
+
+    i2c_handle->Buffer_Index = 0;
+
+    i2c_handle->Address_RW = slave_address;
+
+    if (register_address_size == 2)
+	{
+	/* msb of register address if address is of two bytes*/
+	i2c_handle->MEM_Address[1] = (register_address >> 8);
+	}
+
+    i2c_handle->MEM_Address[0] = register_address;
+
+    i2c_handle->MEM_Address_Count= register_address_size;
+
+    i2c_handle->Byte_Count = 0;
+
+    i2c_handle->Bit_Count = 0;
+
+    i2c_handle->Current_Byte = 0;
+
+    i2c_handle->Active_Flag = 1;
+
+    i2c_handle->State = Generate_Start;
+
+    i2c_handle->Status_Flag = I2C_Busy;
+
+    while(i2c_handle->Active_Flag)
+	{
+	Soft_I2C_Master_State_Machine(i2c_handle);
+	Soft_I2C_Delay();
+	}
+    }
+
+void Soft_I2C_Master_Read_Byte(Soft_I2C_Master_t *i2c_handle,
+	                       uint8_t slave_address,
+			       uint8_t *data)
+    {
+    i2c_handle->I2C_Buffer = data;
+
+    i2c_handle->Buffer_Index = 0;
+
+    i2c_handle->Address_RW = (slave_address + 1); /* slave address plus read*/
+
+    i2c_handle->Byte_Count = 1;
+
+    i2c_handle->Bit_Count = 0;
+
+    i2c_handle->Current_Byte = 0;
+
+    i2c_handle->Active_Flag = 1;
+
+    i2c_handle->State = Generate_Start;
+
+    i2c_handle->Status_Flag = I2C_Busy;
+
+    while(i2c_handle->Active_Flag)
+	{
+	Soft_I2C_Master_State_Machine(i2c_handle);
+	Soft_I2C_Delay();
+	}
+    }
+
+void Soft_I2C_Master_Write_Bytes(Soft_I2C_Master_t *i2c_handle,
+	                         uint8_t slave_address,
+	                         uint16_t register_address,
+				 uint8_t register_address_size,
+				 uint8_t* bytes,
+				 uint16_t len)
+    {
+    i2c_handle->I2C_Buffer = bytes;
+
+    i2c_handle->Buffer_Index = 0;
+
+    i2c_handle->Address_RW = slave_address;
+
+    if (register_address_size == 2)
+	{
+	/* msb of register address if address is of two bytes*/
+	i2c_handle->MEM_Address[1] = (register_address >> 8);
+	}
+
+    i2c_handle->MEM_Address[0] = register_address;
+
+    i2c_handle->MEM_Address_Count= register_address_size;
+
+    i2c_handle->Byte_Count = len;
+
+    i2c_handle->Bit_Count = 0;
+
+    i2c_handle->Current_Byte = 0;
+
+    i2c_handle->Active_Flag = 1;
+
+    i2c_handle->State = Generate_Start;
+
+    i2c_handle->Status_Flag = I2C_Busy;
+
+    while(i2c_handle->Active_Flag)
+	{
+	Soft_I2C_Master_State_Machine(i2c_handle);
+	Soft_I2C_Delay();
+	}
+    }
+
+void  Soft_I2C_Master_Read_Bytes(Soft_I2C_Master_t *i2c_handle,
+	                         uint8_t slave_address,
+				 uint8_t *data,
+				 uint8_t len)
+    {
+    i2c_handle->I2C_Buffer = data;
+
+    i2c_handle->Buffer_Index = 0;
+
+    i2c_handle->Address_RW = (slave_address + 1);/* slave address plus read*/
+
+    i2c_handle->Byte_Count = len;
+
+    i2c_handle->Bit_Count = 0;
+
+    i2c_handle->Current_Byte = 0;
+
+    i2c_handle->Active_Flag = 1;
+
+    i2c_handle->State = Generate_Start;
+
+    i2c_handle->Status_Flag = I2C_Busy;
+
+    while(i2c_handle->Active_Flag)
+	{
+	Soft_I2C_Master_State_Machine(i2c_handle);
+	Soft_I2C_Delay();
+	}
+    }
+
+/*check if slave responding*/
+void Soft_I2C_Master_Scan(Soft_I2C_Master_t *i2c_handle,
+	                  uint8_t slave_address)
+    {
+
+    i2c_handle->I2C_Buffer = NULL;
+
+    i2c_handle->Buffer_Index = 0;
+
+    i2c_handle->Address_RW = slave_address;
+
+    i2c_handle->MEM_Address_Count= 0;
+
+    i2c_handle->Byte_Count = 0;
+
+    i2c_handle->Bit_Count = 0;
+
+    i2c_handle->Current_Byte = 0;
+
+    i2c_handle->Active_Flag = 1;
+
+    i2c_handle->State = Generate_Start;
+
+    i2c_handle->Status_Flag = I2C_Busy;
+
+    while(i2c_handle->Active_Flag)
+	{
+	Soft_I2C_Master_State_Machine(i2c_handle);
+	Soft_I2C_Delay();
+	}
     }
 
