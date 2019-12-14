@@ -104,14 +104,12 @@ int main(void)
   OLED_I2C_Handle.GPIO_SCL_Port       = GPIOA;
   OLED_I2C_Handle.GPIO_SDA_Pin        = GPIO_PIN_5;
   OLED_I2C_Handle.GPIO_SDA_Port       = GPIOA;
-  OLED_I2C_Handle.I2C_Buffer.Buffer   = I2C1_Buffer;
-  OLED_I2C_Handle.I2C_Buffer.Size     = sizeof(I2C1_Buffer);
 
   Soft_I2C_Master_Add(&OLED_I2C_Handle);
 
 
     ssd1306_Init();
-/*
+
     while (1)
 	{
 	ssd1306_Fill(Black);
@@ -119,7 +117,7 @@ int main(void)
 	ssd1306_Fill(White);
 	ssd1306_UpdateScreen();
 	}
-*/
+
     char temp[5];
 
     /*********************scan for i2c devices****************************/

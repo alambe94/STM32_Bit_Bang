@@ -24,7 +24,7 @@ static SSD1306_t SSD1306;
 	                       SSD1306_I2C_ADDR,
 			       0x00,
 			       1,
-			       command);
+			       &command);
 
     while(Soft_I2C_Master_Get_Status(&OLED_I2C_Handle) == I2C_Busy);
 
