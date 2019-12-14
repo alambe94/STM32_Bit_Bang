@@ -111,7 +111,15 @@ int main(void)
 
 
     ssd1306_Init();
-
+/*
+    while (1)
+	{
+	ssd1306_Fill(Black);
+	ssd1306_UpdateScreen();
+	ssd1306_Fill(White);
+	ssd1306_UpdateScreen();
+	}
+*/
     char temp[5];
 
     /*********************scan for i2c devices****************************/

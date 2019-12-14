@@ -16,8 +16,7 @@
 #define SOFT_I2C_OK		0
 #define SOFT_I2C_ERR		1
 
-
-enum Soft_I2C_Master_State_t
+typedef enum Soft_I2C_Master_State_t
     {
     Generate_Start,
     Data_Out,
@@ -25,15 +24,15 @@ enum Soft_I2C_Master_State_t
     Data_In,
     Give_ACK,
     Generate_Stop
-    };
+    } Soft_I2C_Master_State_t;
 
-enum Soft_I2C_Master_Flags_t
+typedef enum Soft_I2C_Master_Flags_t
     {
     I2C_Time_Out,
     I2C_Ok,
     I2C_Error,
     I2C_Busy
-    };
+    } Soft_I2C_Master_Flags_t;
 
 typedef struct Soft_I2C_Master_t
     {
@@ -54,9 +53,11 @@ typedef struct Soft_I2C_Master_t
 
 	uint8_t Active_Flag;
 
-	enum Soft_I2C_Master_State_t State;
+	Soft_I2C_Master_State_t State;
 
-	enum Soft_I2C_Master_Flags_t Status_Flag;
+	Soft_I2C_Master_Flags_t Status_Flag;
+
+	void (*callback)(Soft_I2C_Master_Flags_t flag);
 
     } Soft_I2C_Master_t;
 
@@ -91,7 +92,7 @@ void  Soft_I2C_Master_Read_Bytes(Soft_I2C_Master_t *i2c_handle,
 void Soft_I2C_Master_Scan(Soft_I2C_Master_t *i2c_handle,
 	                  uint8_t slave_address);
 
-enum Soft_I2C_Master_Flags_t  Soft_I2C_Master_Get_Status(Soft_I2C_Master_t *i2c_handle);
+Soft_I2C_Master_Flags_t  Soft_I2C_Master_Get_Status(Soft_I2C_Master_t *i2c_handle);
 
 void Soft_I2C_Master_Start();
 
