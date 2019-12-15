@@ -1,319 +1,344 @@
 #include "soft_i2c_slave.h"
 #include "stm32f1xx_hal.h"
-#include "delay_us.h"
 
-#define MAX_SOFT_I2C_SLAVE  8 /* max 8 possible with 16 interrupts lines on stm32*/
+#define SOFT_I2C_SLAVE_SCL_PIN  GPIO_PIN_6
+#define SOFT_I2C_SLAVE_SCL_PORT GPIOD
 
-static Soft_I2C_Slave_t *Soft_I2C_Slave_List[MAX_SOFT_I2C_SLAVE];
-static uint8_t Soft_I2C_Slave_Count = 0;
+#define SOFT_I2C_SLAVE_SDA_PIN  GPIO_PIN_7
+#define SOFT_I2C_SLAVE_SDA_PORT GPIOD
 
-/* add a new instance of soft i2c slave to state machine*/
-void Soft_I2C_Slave_Add(Soft_I2C_Slave_t *i2c_handle)
+static struct Soft_I2C_Slave_t
     {
+	uint8_t *I2C_Slave_Buffer; /* I2C working buffer*/
+	uint16_t Buffer_Index; /* I2C_Slave_Buffer index*/
 
-    if (Soft_I2C_Slave_Count < MAX_SOFT_I2C_SLAVE)
-	{
-	i2c_handle->Active_Flag = 0;
-	i2c_handle->State = Detect_Start;
-	i2c_handle->Buffer_Index = 0;
-	i2c_handle->Current_Byte = 0;
+	/* no of bytes slave is ready to receive or send if set 0 nack nack will be send*/
+	/* callback will be called when address is matched with I2C_Read_Request or I2C_Write_Request*/
+	/* in callback set the buffer where the data will be written to or sen from*/
+	/* set Slave_Ready bytes, slave is able to receive or transmit*/
+	uint16_t Slave_Ready;
 
-	GPIO_InitTypeDef GPIO_InitStruct;
+	uint8_t Own_Address;
 
-	/* GPIO Ports Clock Enable */
-	//__HAL_RCC_GPIOA_CLK_ENABLE();
-	//__HAL_RCC_GPIOB_CLK_ENABLE();
-	//__HAL_RCC_GPIOC_CLK_ENABLE();
-	//__HAL_RCC_GPIOD_CLK_ENABLE();
-	//__HAL_RCC_GPIOE_CLK_ENABLE();
-	//__HAL_RCC_GPIOF_CLK_ENABLE();
+	uint8_t Received_Address;
 
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin,
-		GPIO_PIN_SET);
-	HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,
-		GPIO_PIN_SET);
+	uint8_t Bit_Count;
+	uint8_t Current_Byte;
 
-	GPIO_InitStruct.Pin = i2c_handle->GPIO_SCL_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-	HAL_GPIO_Init(i2c_handle->GPIO_SCL_Port, &GPIO_InitStruct);
+	uint8_t Active_Flag;
 
-	GPIO_InitStruct.Pin = i2c_handle->GPIO_SDA_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-	HAL_GPIO_Init(i2c_handle->GPIO_SDA_Port, &GPIO_InitStruct);
+	void (*callback)(Soft_I2C_Slave_Event_t event);
 
-	//HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
-	//HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+    } Soft_I2C_Slave;
 
-	//HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-	//HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+static enum Soft_I2C_Slave_State_t
+    {
+    Slave_Detect_Start,
+    Slave_Address_In,
+    Slave_Data_In,
+    Slave_Give_ACK,
+    Slave_Data_Out,
+    Slave_Read_ACK,
+    Slave_Detect_Stop
+    } Soft_I2C_Slave_State;
 
-	Soft_I2C_Slave_List[Soft_I2C_Slave_Count] = i2c_handle;
-	Soft_I2C_Slave_Count++;
-
-	}
+static void Soft_I2C_Slave_SDA_Enable_INT()
+    {
+    SET_BIT(EXTI->IMR, SOFT_I2C_SLAVE_SDA_PIN);
     }
 
-static void Soft_I2C_SDA_High(Soft_I2C_Slave_t *i2c_handle)
+static void Soft_I2C_Slave_SDA_Disable_INT()
     {
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,
+    CLEAR_BIT(EXTI->IMR, SOFT_I2C_SLAVE_SDA_PIN);
+    }
+
+static void Soft_I2C_Slave_SCL_Enable_INT()
+    {
+    SET_BIT(EXTI->IMR, SOFT_I2C_SLAVE_SCL_PIN);
+    }
+
+static void Soft_I2C_Slave_SCL_Disable_INT()
+    {
+    CLEAR_BIT(EXTI->IMR, SOFT_I2C_SLAVE_SCL_PIN);
+    }
+
+void Soft_I2C_Slave_Init(void (*Event_Callback)(Soft_I2C_Slave_Event_t event))
+    {
+
+    Soft_I2C_Slave.Active_Flag = 0;
+    Soft_I2C_Slave.Buffer_Index = 0;
+    Soft_I2C_Slave.Current_Byte = 0;
+
+    Soft_I2C_Slave.callback = Event_Callback;
+
+    Soft_I2C_Slave_State = Slave_Detect_Start;
+
+    __HAL_RCC_GPIOD_CLK_ENABLE();
+
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    HAL_GPIO_WritePin(SOFT_I2C_SLAVE_SCL_PORT, SOFT_I2C_SLAVE_SCL_PIN,
+	    GPIO_PIN_SET);
+    HAL_GPIO_WritePin(SOFT_I2C_SLAVE_SDA_PORT, SOFT_I2C_SLAVE_SDA_PIN,
+	    GPIO_PIN_SET);
+
+    GPIO_InitStruct.Pin = SOFT_I2C_SLAVE_SCL_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+    HAL_GPIO_Init(SOFT_I2C_SLAVE_SCL_PORT, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = SOFT_I2C_SLAVE_SDA_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+    HAL_GPIO_Init(SOFT_I2C_SLAVE_SDA_PORT, &GPIO_InitStruct);
+
+    HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+    }
+
+static void Soft_I2C_Slave_SDA_High()
+    {
+    HAL_GPIO_WritePin(SOFT_I2C_SLAVE_SDA_PORT, SOFT_I2C_SLAVE_SDA_PIN,
 	    GPIO_PIN_SET);
     }
 
-static void Soft_I2C_SDA_Low(Soft_I2C_Slave_t *i2c_handle)
+static void Soft_I2C_Slave_SDA_Low()
     {
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,
+    HAL_GPIO_WritePin(SOFT_I2C_SLAVE_SDA_PORT, SOFT_I2C_SLAVE_SDA_PIN,
 	    GPIO_PIN_RESET);
     }
 
-static uint8_t Soft_I2C_SDA_Read(Soft_I2C_Slave_t *i2c_handle)
+static uint8_t Soft_I2C_Slave_SDA_Read()
     {
-    return HAL_GPIO_ReadPin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin);
+    return HAL_GPIO_ReadPin(SOFT_I2C_SLAVE_SDA_PORT, SOFT_I2C_SLAVE_SDA_PIN);
     }
 
-static uint8_t Soft_I2C_ACK_Read(Soft_I2C_Slave_t *i2c_handle)
+static uint8_t Soft_I2C_Slave_ACK_Read()
     {
-    return HAL_GPIO_ReadPin(i2c_handle->GPIO_SDA_Port,
-	    i2c_handle->GPIO_SDA_Pin) ? 0 : 1;
+    return HAL_GPIO_ReadPin(SOFT_I2C_SLAVE_SDA_PORT,
+    SOFT_I2C_SLAVE_SDA_PIN) ? 0 : 1;
     }
 
-static uint8_t Soft_I2C_SCL_Read(Soft_I2C_Slave_t *i2c_handle)
+static uint8_t Soft_I2C_Slave_SCL_Read()
     {
-    return HAL_GPIO_ReadPin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin);
+    return HAL_GPIO_ReadPin(SOFT_I2C_SLAVE_SCL_PORT, SOFT_I2C_SLAVE_SCL_PIN);
     }
 
-static void Soft_I2C_Slave_State_Machine_SDA_ISR(Soft_I2C_Slave_t *i2c_handle)
+static void Soft_I2C_Slave_State_Machine_SDA_ISR()
     {
 
-    if (i2c_handle->State == Detect_Start)
+    if (Soft_I2C_Slave_State == Slave_Detect_Start)
 	{
-	if (!Soft_I2C_SDA_Read(i2c_handle) && Soft_I2C_SCL_Read(i2c_handle))
+	if (!Soft_I2C_Slave_SDA_Read() && Soft_I2C_Slave_SCL_Read())
 	    {
-	    i2c_handle->State = Address_In;
-	    i2c_handle->Bit_Count = 0;
-	    i2c_handle->Current_Byte = 0;
-	    i2c_handle->Active_Flag = 1;
 
-	    i2c_handle->Event = I2C_Start_Detected;
+	    Soft_I2C_Slave_SDA_Disable_INT();
 
-	    if (i2c_handle->callback != NULL)
+	    Soft_I2C_Slave_State = Slave_Address_In;
+	    Soft_I2C_Slave.Bit_Count = 0;
+	    Soft_I2C_Slave.Current_Byte = 0;
+	    Soft_I2C_Slave.Buffer_Index = 0;
+	    Soft_I2C_Slave.Active_Flag = 1;
+	    Soft_I2C_Slave.Slave_Ready = 0;
+
+	    if (Soft_I2C_Slave.callback != NULL)
 		{
-		//i2c_handle->callback(i2c_handle->Event);
+		//Soft_I2C_Slave.callback(Slave_Start_Detected);
 		}
 
 	    }
 	}
 
-    if (i2c_handle->State == Detect_Stop)
+    else if (Soft_I2C_Slave_State == Slave_Detect_Stop)
 	{
-	if (Soft_I2C_SDA_Read(i2c_handle) && Soft_I2C_SCL_Read(i2c_handle))
+	if (Soft_I2C_Slave_SDA_Read() && Soft_I2C_Slave_SCL_Read())
 	    {
-	    i2c_handle->State = Detect_Start;
-	    i2c_handle->Bit_Count = 0;
-	    i2c_handle->Current_Byte = 0;
-	    i2c_handle->Active_Flag = 0;
+	    Soft_I2C_Slave_State = Slave_Detect_Start;
 
-	    i2c_handle->Event = I2C_Stop_Detected;
+	    Soft_I2C_Slave.Active_Flag = 0;
 
-	    if (i2c_handle->callback != NULL)
+	    if (Soft_I2C_Slave.callback != NULL)
 		{
-		//i2c_handle->callback(i2c_handle->Event);
+		//Soft_I2C_Slave.callback(Slave_Stop_Detected);
 		}
 	    }
 	}
 
     }
 
-static void Soft_I2C_Slave_State_Machine_SCL_ISR(Soft_I2C_Slave_t *i2c_handle)
+static void Soft_I2C_Slave_State_Machine_SCL_ISR()
     {
 
-    if (Soft_I2C_SCL_Read(i2c_handle))
+    /*rising edge*/
+    if (Soft_I2C_Slave_SCL_Read())
 	{
-	/*things to do when clock is high*/
 
-	if (i2c_handle->State == Detect_Start
-		|| i2c_handle->State == Detect_Stop)
+	if (Soft_I2C_Slave_State == Slave_Detect_Start
+		|| Soft_I2C_Slave_State == Slave_Detect_Stop)
 	    {
-	    /*detected in sda isr*/
+	    Soft_I2C_Slave_SDA_Enable_INT();
 	    }
-	else if (i2c_handle->State == Address_In)
+	else if (Soft_I2C_Slave_State == Slave_Address_In)
 	    {
 
-	    i2c_handle->Current_Byte <<= 1;
+	    Soft_I2C_Slave.Current_Byte <<= 1;
 
-	    if (Soft_I2C_SDA_Read(i2c_handle))
+	    if (Soft_I2C_Slave_SDA_Read())
 		{
-		i2c_handle->Current_Byte |= 0x01;
+		Soft_I2C_Slave.Current_Byte |= 0x01;
 		}
 
-	    i2c_handle->Bit_Count++;
+	    Soft_I2C_Slave.Bit_Count++;
 
-	    if (i2c_handle->Bit_Count == 8)
+	    if (Soft_I2C_Slave.Bit_Count == 8)
 		{
 
-		i2c_handle->Bit_Count = 0;
+		Soft_I2C_Slave.Bit_Count = 0;
 
-		i2c_handle->Received_Address = i2c_handle->Current_Byte;
+		Soft_I2C_Slave.Received_Address = Soft_I2C_Slave.Current_Byte;
 
-		if (i2c_handle->Received_Address == i2c_handle->Own_Address)
+		Soft_I2C_Slave.Current_Byte = 0;
+
+		if (Soft_I2C_Slave.Received_Address
+			== Soft_I2C_Slave.Own_Address)
 		    {
 
-		    i2c_handle->Event = I2C_Write_Request;
-
-		    if (i2c_handle->callback != NULL)
+		    if (Soft_I2C_Slave.callback != NULL)
 			{
-			i2c_handle->callback(i2c_handle->Event);
+			Soft_I2C_Slave.callback(Slave_Write_Request);
+			}
+
+		    if (Soft_I2C_Slave.Slave_Ready)
+			{
+			Soft_I2C_Slave_State = Slave_Give_ACK;
 			}
 		    }
 
-		if (i2c_handle->Received_Address
-			== (i2c_handle->Own_Address + 1))
+		else if (Soft_I2C_Slave.Received_Address
+			== (Soft_I2C_Slave.Own_Address + 1))
 		    {
 
-		    i2c_handle->Event = I2C_Read_Request;
-
-		    if (i2c_handle->callback != NULL)
+		    if (Soft_I2C_Slave.callback != NULL)
 			{
-			i2c_handle->callback(i2c_handle->Event);
+			Soft_I2C_Slave.callback(Slave_Read_Request);
 			}
-		    }
 
-		if (i2c_handle->Buffer_Ready)
-		    {
-		    i2c_handle->State = Give_ACK;
+		    if (Soft_I2C_Slave.Slave_Ready)
+			{
+			Soft_I2C_Slave_State = Slave_Give_ACK;
+			}
 		    }
 		else
 		    {
-		    i2c_handle->State = Detect_Stop;
+		    Soft_I2C_Slave_State = Slave_Detect_Stop;
 		    }
-
-		i2c_handle->Current_Byte = 0;
 
 		}
 
 	    }
-	else if (i2c_handle->State == Give_ACK)
+	else if (Soft_I2C_Slave_State == Slave_Give_ACK)
 	    {
 
-	    if (i2c_handle->Received_Address == i2c_handle->Own_Address)
+	    if (Soft_I2C_Slave.Received_Address == Soft_I2C_Slave.Own_Address)
 		{
-		i2c_handle->State = Data_In;
+		Soft_I2C_Slave_State = Slave_Data_In;
 		}
 	    else
 		{/*(Own_Address + 1)*/
-		i2c_handle->State = Data_Out;
+		Soft_I2C_Slave_State = Slave_Data_Out;
 		}
 
 	    }
-	else if (i2c_handle->State == Data_In)
+	else if (Soft_I2C_Slave_State == Slave_Data_In)
 	    {
 
-	    if (i2c_handle->Buffer_Ready)
+	    if (Soft_I2C_Slave.Slave_Ready)
 		{
 
-		i2c_handle->Current_Byte <<= 1;
+		Soft_I2C_Slave.Current_Byte <<= 1;
 
-		if (Soft_I2C_SDA_Read(i2c_handle) == GPIO_PIN_SET)
+		if (Soft_I2C_Slave_SDA_Read())
 		    {
-		    i2c_handle->Current_Byte |= 0x01;
+		    Soft_I2C_Slave.Current_Byte |= 0x01;
 		    }
 
-		i2c_handle->Bit_Count++;
+		Soft_I2C_Slave.Bit_Count++;
 
-		if (i2c_handle->Bit_Count == 8)
+		if (Soft_I2C_Slave.Bit_Count == 8)
 		    {
 
-		    i2c_handle->Bit_Count = 0;
+		    Soft_I2C_Slave.Bit_Count = 0;
 
-		    i2c_handle->Buffer_Ready--;
+		    Soft_I2C_Slave.Slave_Ready--;
 
-		    i2c_handle->State = Give_ACK;
+		    Soft_I2C_Slave_State = Slave_Give_ACK;
 
-		    i2c_handle->I2C_Buffer[i2c_handle->Buffer_Index] =
-			    i2c_handle->Current_Byte;
+		    Soft_I2C_Slave.I2C_Slave_Buffer[Soft_I2C_Slave.Buffer_Index] =
+			    Soft_I2C_Slave.Current_Byte;
 
-		    i2c_handle->Current_Byte = 0;
+		    Soft_I2C_Slave.Current_Byte = 0;
 
-		    i2c_handle->Buffer_Index++;
+		    Soft_I2C_Slave.Buffer_Index++;
 
 		    }
 
 		}
 	    else
 		{
-		i2c_handle->State = Detect_Stop;
+		Soft_I2C_Slave_State = Slave_Detect_Stop;
 		}
 
 	    }
-	else if (i2c_handle->State == Data_Out)
+	else if (Soft_I2C_Slave_State == Slave_Data_Out)
 	    {
 
-	    if (i2c_handle->Bit_Count == 8)
+	    if (Soft_I2C_Slave.Bit_Count == 8)
 		{
 
-		i2c_handle->Bit_Count = 0;
+		Soft_I2C_Slave.Bit_Count = 0;
 
-		i2c_handle->Current_Byte = 0;
+		Soft_I2C_Slave.Current_Byte = 0;
 
-		i2c_handle->State = Read_ACK;
+		Soft_I2C_Slave_State = Slave_Read_ACK;
 		}
 
 	    }
-	else if (i2c_handle->State == Read_ACK)
+	else if (Soft_I2C_Slave_State == Slave_Read_ACK)
 	    {
 
-	    if (Soft_I2C_ACK_Read(i2c_handle))
+	    if (Soft_I2C_Slave_ACK_Read())
 		{
 
-		i2c_handle->Event = I2C_ACK_Received;
+		Soft_I2C_Slave_State = Slave_Data_Out;
 
-		if (i2c_handle->callback != NULL)
+		if (Soft_I2C_Slave.callback != NULL)
 		    {
-		    //i2c_handle->callback(i2c_handle->Event);
+		    //Soft_I2C_Slave.callback(Slave_ACK_Received);
 		    }
 
-		if (i2c_handle->Received_Address == i2c_handle->Own_Address)
+		/*grab byte from buffer to send*/
+		Soft_I2C_Slave.Current_Byte =
+			Soft_I2C_Slave.I2C_Slave_Buffer[Soft_I2C_Slave.Buffer_Index];
+
+		Soft_I2C_Slave.Buffer_Index++;
+
+		if (Soft_I2C_Slave.Buffer_Index == Soft_I2C_Slave.Slave_Ready)
 		    {
-		    i2c_handle->State = Data_In;
+		    /*roll over*/
+		    Soft_I2C_Slave.Buffer_Index = 0;
 		    }
-		else
-		    {
-		    /*(Own_Address + 1)*/
 
-		    if (i2c_handle->Buffer_Ready)
-			{
-
-			i2c_handle->State = Data_Out;
-
-			i2c_handle->Buffer_Ready--;
-
-			/*grab byte from buffer to send*/
-			i2c_handle->Current_Byte =
-				i2c_handle->I2C_Buffer[i2c_handle->Buffer_Index];
-
-			i2c_handle->Buffer_Index++;
-
-			}
-		    else
-			{
-			i2c_handle->State = Detect_Stop;
-			}
-
-		    }
 		}
 	    else
 		{
-		i2c_handle->Event = I2C_NACK_Received;
-
-		if (i2c_handle->callback != NULL)
+		if (Soft_I2C_Slave.callback != NULL)
 		    {
-		    //i2c_handle->callback(i2c_handle->Event);
+		    //Soft_I2C_Slave.callback(Slave_NACK_Receivedt);
 		    }
-		i2c_handle->State = Detect_Stop;
+		Soft_I2C_Slave_State = Slave_Detect_Stop;
 		}
 
 	    }
@@ -322,38 +347,38 @@ static void Soft_I2C_Slave_State_Machine_SCL_ISR(Soft_I2C_Slave_t *i2c_handle)
 
     else
 	{
-
-	/*things to do when clock is low*/
-	if (i2c_handle->State == Detect_Start
-		|| i2c_handle->State == Detect_Stop)
+	/*falling edge edge*/
+	if (Soft_I2C_Slave_State == Slave_Detect_Start
+		|| Soft_I2C_Slave_State == Slave_Detect_Stop)
 	    {
-	    /*detected in sda isr*/
+
 	    }
-	else if (i2c_handle->State == Address_In || i2c_handle->State == Data_In
-		|| i2c_handle->State == Read_ACK)
+	else if (Soft_I2C_Slave_State == Slave_Address_In
+		|| Soft_I2C_Slave_State == Slave_Data_In
+		|| Soft_I2C_Slave_State == Slave_Read_ACK)
 	    {
 	    /*leave sda high*/
-	    Soft_I2C_SDA_High(i2c_handle);
+	    Soft_I2C_Slave_SDA_High();
 	    }
-	else if (i2c_handle->State == Give_ACK)
+	else if (Soft_I2C_Slave_State == Slave_Give_ACK)
 	    {
-	    Soft_I2C_SDA_Low(i2c_handle);
+	    Soft_I2C_Slave_SDA_Low();
 	    }
-	else if (i2c_handle->State == Data_Out)
+	else if (Soft_I2C_Slave_State == Slave_Data_Out)
 	    {
 	    /*send Current_Byte*/
-	    if (i2c_handle->Current_Byte & 0x80)
+	    if (Soft_I2C_Slave.Current_Byte & 0x80)
 		{
-		Soft_I2C_SDA_High(i2c_handle);
+		Soft_I2C_Slave_SDA_High();
 		}
 	    else
 		{
-		Soft_I2C_SDA_Low(i2c_handle);
+		Soft_I2C_Slave_SDA_Low();
 		}
 
-	    i2c_handle->Current_Byte <<= 1;
+	    Soft_I2C_Slave.Current_Byte <<= 1;
 
-	    i2c_handle->Bit_Count++;
+	    Soft_I2C_Slave.Bit_Count++;
 	    }
 
 	}
@@ -363,23 +388,14 @@ static void Soft_I2C_Slave_State_Machine_SCL_ISR(Soft_I2C_Slave_t *i2c_handle)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     {
 
-    Soft_I2C_Slave_t *i2c_handle = NULL;
-
-    for (uint8_t i = 0; i < Soft_I2C_Slave_Count; i++)
+    if (GPIO_Pin == SOFT_I2C_SLAVE_SDA_PIN)
 	{
-	/* grab i2c handle from list*/
-	i2c_handle = Soft_I2C_Slave_List[i];
+	Soft_I2C_Slave_State_Machine_SDA_ISR();
+	}
 
-	if (GPIO_Pin == i2c_handle->GPIO_SDA_Pin)
-	    {
-	    Soft_I2C_Slave_State_Machine_SDA_ISR(i2c_handle);
-	    }
-
-	if (GPIO_Pin == i2c_handle->GPIO_SCL_Pin)
-	    {
-	    Soft_I2C_Slave_State_Machine_SCL_ISR(i2c_handle);
-	    }
-
+    if (GPIO_Pin == SOFT_I2C_SLAVE_SCL_PIN)
+	{
+	Soft_I2C_Slave_State_Machine_SCL_ISR();
 	}
 
     }

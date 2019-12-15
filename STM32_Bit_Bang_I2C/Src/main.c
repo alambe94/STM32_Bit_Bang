@@ -52,6 +52,7 @@
 Soft_I2C_Master_t OLED_I2C_Handle;
 uint8_t I2C1_TX_Buffer[256];
 uint8_t I2C1_RX_Buffer[256];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
