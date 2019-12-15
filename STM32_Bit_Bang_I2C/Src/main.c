@@ -50,7 +50,8 @@
 
 /* USER CODE BEGIN PV */
 Soft_I2C_Master_t OLED_I2C_Handle;
-char I2C1_Buffer[256];
+uint8_t I2C1_TX_Buffer[256];
+uint8_t I2C1_RX_Buffer[256];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,6 +105,12 @@ int main(void)
   OLED_I2C_Handle.GPIO_SCL_Port       = GPIOA;
   OLED_I2C_Handle.GPIO_SDA_Pin        = GPIO_PIN_5;
   OLED_I2C_Handle.GPIO_SDA_Port       = GPIOA;
+
+  OLED_I2C_Handle.I2C_TX_Buffer.Buffer = I2C1_TX_Buffer;
+  OLED_I2C_Handle.I2C_RX_Buffer.Buffer = I2C1_RX_Buffer;
+
+  OLED_I2C_Handle.I2C_TX_Buffer.Size = 256;
+  OLED_I2C_Handle.I2C_RX_Buffer.Size = 256;
 
   Soft_I2C_Master_Add(&OLED_I2C_Handle);
 

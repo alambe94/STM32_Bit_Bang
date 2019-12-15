@@ -7,7 +7,7 @@
 
 #include "ring_buffer.h"
 
-void Ring_Buffer_Init(Ring_Buffer_t* handle, char* buffer, uint16_t size)
+void Ring_Buffer_Init(Ring_Buffer_t* handle, uint8_t* buffer, uint16_t size)
     {
     handle->Buffer        =  buffer;
     handle->Read_Index    =  0;
@@ -16,7 +16,7 @@ void Ring_Buffer_Init(Ring_Buffer_t* handle, char* buffer, uint16_t size)
     }
 
 
-uint8_t Ring_Buffer_Put_Char(Ring_Buffer_t* handle, char data)
+uint8_t Ring_Buffer_Put_Char(Ring_Buffer_t* handle, uint8_t data)
     {
 
     if (handle->Write_Index == handle->Read_Index)
@@ -37,7 +37,7 @@ uint8_t Ring_Buffer_Put_Char(Ring_Buffer_t* handle, char data)
     }
 
 
-uint8_t Ring_Buffer_Get_Char(Ring_Buffer_t* handle, char* data)
+uint8_t Ring_Buffer_Get_Char(Ring_Buffer_t* handle, uint8_t* data)
     {
 
     if (handle->Read_Index == handle->Write_Index)
@@ -59,7 +59,7 @@ uint8_t Ring_Buffer_Get_Char(Ring_Buffer_t* handle, char* data)
     }
 
 
-uint8_t Ring_Buffer_Peek_Char(Ring_Buffer_t* handle, char* data,
+uint8_t Ring_Buffer_Peek_Char(Ring_Buffer_t* handle, uint8_t* data,
 	uint16_t position)
     {
 
@@ -86,7 +86,7 @@ uint8_t Ring_Buffer_Peek_Char(Ring_Buffer_t* handle, char* data,
     }
 
 
-uint8_t Ring_Buffer_Search_Char(Ring_Buffer_t* handle, char data)
+uint8_t Ring_Buffer_Search_Char(Ring_Buffer_t* handle, uint8_t data)
     {
 
     uint8_t  xreturn = 0;
