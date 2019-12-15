@@ -46,43 +46,43 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-Soft_Uart_t UART1;
+Soft_Uart_TX_t UART1;
 char UART1_TX_Buffer[32];
 char UART1_RX_Buffer[32];
 
-Soft_Uart_t UART2;
+Soft_Uart_TX_t UART2;
 char UART2_TX_Buffer[32];
 char UART2_RX_Buffer[32];
 
-Soft_Uart_t UART3;
+Soft_Uart_TX_t UART3;
 char UART3_TX_Buffer[32];
 char UART3_RX_Buffer[32];
 
-Soft_Uart_t UART4;
+Soft_Uart_TX_t UART4;
 char UART4_TX_Buffer[32];
 char UART4_RX_Buffer[32];
 
-Soft_Uart_t UART5;
+Soft_Uart_TX_t UART5;
 char UART5_TX_Buffer[32];
 char UART5_RX_Buffer[32];
 
-Soft_Uart_t UART6;
+Soft_Uart_TX_t UART6;
 char UART6_TX_Buffer[32];
 char UART6_RX_Buffer[32];
 
-Soft_Uart_t UART7;
+Soft_Uart_TX_t UART7;
 char UART7_TX_Buffer[32];
 char UART7_RX_Buffer[32];
 
-Soft_Uart_t UART8;
+Soft_Uart_TX_t UART8;
 char UART8_TX_Buffer[32];
 char UART8_RX_Buffer[32];
 
-Soft_Uart_t UART9;
+Soft_Uart_TX_t UART9;
 char UART9_TX_Buffer[32];
 char UART9_RX_Buffer[32];
 
-Soft_Uart_t UART10;
+Soft_Uart_TX_t UART10;
 char UART10_TX_Buffer[32];
 char UART10_RX_Buffer[32];
 
@@ -111,6 +111,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
+  
 
   /* MCU Configuration--------------------------------------------------------*/
 
@@ -193,16 +194,16 @@ int main(void)
 
 
 
-  Soft_Uart_Init(&UART1);
-  Soft_Uart_Init(&UART2);
-  Soft_Uart_Init(&UART3);
-  Soft_Uart_Init(&UART4);
-  Soft_Uart_Init(&UART5);
-  Soft_Uart_Init(&UART6);
-  Soft_Uart_Init(&UART7);
-  Soft_Uart_Init(&UART8);
-  Soft_Uart_Init(&UART9);
-  Soft_Uart_Init(&UART10);
+  Soft_Uart_TX_Add(&UART1);
+  Soft_Uart_TX_Add(&UART2);
+  Soft_Uart_TX_Add(&UART3);
+  Soft_Uart_TX_Add(&UART4);
+  Soft_Uart_TX_Add(&UART5);
+  Soft_Uart_TX_Add(&UART6);
+  Soft_Uart_TX_Add(&UART7);
+  Soft_Uart_TX_Add(&UART8);
+  Soft_Uart_TX_Add(&UART9);
+  Soft_Uart_TX_Add(&UART10);
 
   /* USER CODE END 2 */
 
@@ -234,13 +235,10 @@ int main(void)
       //HAL_Delay(1);
       Soft_Uart_Send_String(&UART10, "Hello World! from UART10\r\n");
 
-      Soft_Uart_Start();
-
     /* wait for transmission to complete*/
       while(!Soft_Uart_Get_TC_Flag(&UART10))
           {
           }
-      Soft_Uart_Stop();
 
       Soft_Uart_Clear_TC_Flag(&UART1);
       Soft_Uart_Clear_TC_Flag(&UART2);

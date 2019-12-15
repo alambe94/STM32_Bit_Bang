@@ -49,8 +49,11 @@ void Soft_I2C_Master_Add(Soft_I2C_Master_t *i2c_handle)
 	//__HAL_RCC_GPIOF_CLK_ENABLE();
 
 	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin,GPIO_PIN_SET);
-	HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,GPIO_PIN_SET);
+
+	HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin,
+		GPIO_PIN_SET);
+	HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,
+		GPIO_PIN_SET);
 
 	GPIO_InitStruct.Pin = i2c_handle->GPIO_SCL_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -64,10 +67,10 @@ void Soft_I2C_Master_Add(Soft_I2C_Master_t *i2c_handle)
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
 	HAL_GPIO_Init(i2c_handle->GPIO_SDA_Port, &GPIO_InitStruct);
 
-	}
+	Soft_I2C_Master_List[Soft_I2C_Master_Count] = i2c_handle;
+	Soft_I2C_Master_Count++;
 
-    Soft_I2C_Master_List[Soft_I2C_Master_Count] = i2c_handle;
-    Soft_I2C_Master_Count++;
+	}
 
     }
 
