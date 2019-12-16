@@ -20,11 +20,12 @@ static SSD1306_t SSD1306;
  void ssd1306_WriteCommand(uint8_t command)
 {
 
-    Soft_I2C_Master_Write_Byte(&OLED_I2C_Handle,
+    Soft_I2C_Master_Write_Bytes_IT(&OLED_I2C_Handle,
 	                       SSD1306_I2C_ADDR,
 			       0x00,
 			       1,
-			       &command);
+			       &command,
+			       1);
 
     while(Soft_I2C_Master_Get_Status(&OLED_I2C_Handle) == I2C_Busy);
 
@@ -116,13 +117,12 @@ void ssd1306_UpdateScreen(void)
 		ssd1306_WriteCommand(0x00);
 		ssd1306_WriteCommand(0x10);
 
-	    Soft_I2C_Master_Write_Bytes(&OLED_I2C_Handle,
+	    Soft_I2C_Master_Write_Bytes_IT(&OLED_I2C_Handle,
 		                       SSD1306_I2C_ADDR,
 				       0x40,
 				       1,
 				       &SSD1306_Buffer[SSD1306_WIDTH * i],
 				       SSD1306_WIDTH);
-	    Soft_I2C_Master_Start();
 
 	    while(Soft_I2C_Master_Get_Status(&OLED_I2C_Handle) == I2C_Busy);
 	}

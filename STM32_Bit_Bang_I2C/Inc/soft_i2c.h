@@ -65,6 +65,45 @@ typedef struct Soft_I2C_Master_t
 void Soft_I2C_Master_Init();
 void Soft_I2C_Master_Add(Soft_I2C_Master_t *i2c_handle);
 
+void Soft_I2C_Master_Start();
+
+void Soft_I2C_Master_Stop();
+
+Soft_I2C_Master_Flags_t  Soft_I2C_Master_Get_Status(Soft_I2C_Master_t *i2c_handle);
+
+uint16_t Soft_I2C_Master_Read_Available(Soft_I2C_Master_t *i2c_handle);
+
+uint8_t Soft_I2C_Master_Read_Byte(Soft_I2C_Master_t *i2c_handle);
+
+void Soft_I2C_Master_Write_Byte_IT(Soft_I2C_Master_t *i2c_handle,
+	                        uint8_t slave_address,
+	                        uint16_t register_address,
+	                        uint8_t register_address_size,
+				uint8_t *byte);
+
+void Soft_I2C_Master_Write_Dummy_IT(Soft_I2C_Master_t *i2c_handle,
+	                         uint8_t slave_address,
+	                         uint16_t register_address,
+	                         uint8_t register_address_size);
+
+void Soft_I2C_Master_Write_Bytes_IT(Soft_I2C_Master_t *i2c_handle,
+	                         uint8_t slave_address,
+	                         uint16_t register_address,
+				 uint8_t register_address_size,
+				 uint8_t* bytes,
+				 uint16_t len);
+
+void  Soft_I2C_Master_Read_Request_IT(Soft_I2C_Master_t *i2c_handle,
+	                           uint8_t slave_address,
+				   uint8_t len);
+
+void Soft_I2C_Master_Scan_IT(Soft_I2C_Master_t *i2c_handle,
+	                  uint8_t slave_address);
+
+
+
+
+
 void Soft_I2C_Master_Write_Byte(Soft_I2C_Master_t *i2c_handle,
 	                        uint8_t slave_address,
 	                        uint16_t register_address,
@@ -92,10 +131,5 @@ void  Soft_I2C_Master_Read_Request(Soft_I2C_Master_t *i2c_handle,
 void Soft_I2C_Master_Scan(Soft_I2C_Master_t *i2c_handle,
 	                  uint8_t slave_address);
 
-Soft_I2C_Master_Flags_t  Soft_I2C_Master_Get_Status(Soft_I2C_Master_t *i2c_handle);
-
-void Soft_I2C_Master_Start();
-
-void Soft_I2C_Master_Stop();
 
 #endif /* SOFT_I2C_H_ */

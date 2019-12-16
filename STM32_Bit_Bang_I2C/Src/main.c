@@ -116,8 +116,18 @@ int main(void)
   Soft_I2C_Master_Add(&OLED_I2C_Handle);
 
 
-    ssd1306_Init();
+  ssd1306_Init();
 
+	ssd1306_Fill(Black);
+	ssd1306_UpdateScreen();
+	ssd1306_Fill(White);
+	ssd1306_UpdateScreen();
+	ssd1306_Fill(Black);
+	ssd1306_UpdateScreen();
+	    ssd1306_WriteString("At:", Font_11x18, White);
+	    ssd1306_WriteString("0x", Font_11x18, White);
+	ssd1306_UpdateScreen();
+/*
     while (1)
 	{
 	ssd1306_Fill(Black);
@@ -125,7 +135,7 @@ int main(void)
 	ssd1306_Fill(White);
 	ssd1306_UpdateScreen();
 	}
-
+*/
     char temp[5];
 
     /*********************scan for i2c devices****************************/
@@ -133,7 +143,7 @@ int main(void)
 	{
 	itoa(i << 1, temp, 16); //int string base 16 (hex)
 
-	Soft_I2C_Master_Scan(&OLED_I2C_Handle, i << 1);
+	Soft_I2C_Master_Scan_IT(&OLED_I2C_Handle, i << 1);
 	while (Soft_I2C_Master_Get_Status(&OLED_I2C_Handle) == I2C_Busy);
 
 	if (Soft_I2C_Master_Get_Status(&OLED_I2C_Handle) == I2C_Ok)
