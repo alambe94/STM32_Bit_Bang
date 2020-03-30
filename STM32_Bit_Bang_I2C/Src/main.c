@@ -107,11 +107,11 @@ int main(void)
   OLED_I2C_Handle.GPIO_SDA_Pin        = GPIO_PIN_5;
   OLED_I2C_Handle.GPIO_SDA_Port       = GPIOA;
 
-  OLED_I2C_Handle.I2C_TX_Buffer.Buffer = I2C1_TX_Buffer;
-  OLED_I2C_Handle.I2C_RX_Buffer.Buffer = I2C1_RX_Buffer;
+  OLED_I2C_Handle.I2C_TX_Ring_Buffer.Buffer = I2C1_TX_Buffer;
+  OLED_I2C_Handle.I2C_RX_Ring_Buffer.Buffer = I2C1_RX_Buffer;
 
-  OLED_I2C_Handle.I2C_TX_Buffer.Size = 256;
-  OLED_I2C_Handle.I2C_RX_Buffer.Size = 256;
+  OLED_I2C_Handle.I2C_TX_Ring_Buffer.Size = 256;
+  OLED_I2C_Handle.I2C_RX_Ring_Buffer.Size = 256;
 
   Soft_I2C_Master_Add(&OLED_I2C_Handle);
 
@@ -143,7 +143,7 @@ int main(void)
 	{
 	itoa(i << 1, temp, 16); //int string base 16 (hex)
 
-	Soft_I2C_Master_Scan_IT(&OLED_I2C_Handle, i << 1);
+	Soft_I2C_Master_Scan(&OLED_I2C_Handle, i << 1);
 	while (Soft_I2C_Master_Get_Status(&OLED_I2C_Handle) == I2C_Busy);
 
 	if (Soft_I2C_Master_Get_Status(&OLED_I2C_Handle) == I2C_Ok)

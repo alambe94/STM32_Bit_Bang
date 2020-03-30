@@ -1,18 +1,29 @@
 #include "stm32f1xx_hal.h"
 #include "soft_i2c.h"
 #include "delay_us.h"
+#include "tim.h"
 
-
+/* transaction in polling or interrupt mode*/
+#define INTERRUPT_MODE 1
 #define MAX_SOFT_I2C_MASTER  10
 
 static Soft_I2C_Master_t *Soft_I2C_Master_List[MAX_SOFT_I2C_MASTER];
 static uint8_t Soft_I2C_Master_Count = 0;
 
-extern TIM_HandleTypeDef htim4;
-#define SOFT_I2C_MASTER_TIM  &htim4
-
 /* custom callback funtion prototype define in stm32f1xx_hal_tim.h */
-void Soft_I2C_Master_TIM_ISR(TIM_HandleTypeDef *htim);
+static void Soft_I2C_Master_State_Machine(Soft_I2C_Master_t *i2c_handle);
+
+#if (INTERRUPT_MODE)
+#define SOFT_I2C_MASTER_TIM  &htim4
+static void Soft_I2C_Master_TIM_Start();
+static void Soft_I2C_Master_TIM_Stop();
+static void Soft_I2C_Master_TIM_ISR();
+#else
+static void Soft_I2C_Delay()
+    {
+    Delay_us(5); /*adjust i2c clk frequency */
+    }
+#endif
 
 void Soft_I2C_Master_Init()
     {
@@ -22,10 +33,13 @@ void Soft_I2C_Master_Init()
 
     /* all the i2c instances shares the the same tim*/
 
+#if (INTERRUPT_MODE)
     /*tim configured in cube see tim.c*/
     /*attach custom callback function to tim*/
     /* USE_HAL_TIM_REGISTER_CALLBACKS is set to 1 in stm32f1xx_hal_conf.h*/
-    HAL_TIM_RegisterCallback(SOFT_I2C_MASTER_TIM, HAL_TIM_PERIOD_ELAPSED_CB_ID, Soft_I2C_Master_TIM_ISR);
+    HAL_TIM_RegisterCallback(SOFT_I2C_MASTER_TIM, HAL_TIM_PERIOD_ELAPSED_CB_ID,
+	    Soft_I2C_Master_TIM_ISR);
+#endif
     }
 
 /* add a new instance of soft i2c master to state machine*/
@@ -37,10 +51,10 @@ void Soft_I2C_Master_Add(Soft_I2C_Master_t *i2c_handle)
 
 	i2c_handle->Active_Flag = 0;
 	i2c_handle->State = Generate_Start;
-	i2c_handle->I2C_RX_Buffer.Read_Index = 0;
-	i2c_handle->I2C_RX_Buffer.Write_Index = 0;
-	i2c_handle->I2C_TX_Buffer.Read_Index = 0;
-	i2c_handle->I2C_TX_Buffer.Write_Index = 0;
+	i2c_handle->I2C_RX_Ring_Buffer.Read_Index = 0;
+	i2c_handle->I2C_RX_Ring_Buffer.Write_Index = 0;
+	i2c_handle->I2C_TX_Ring_Buffer.Read_Index = 0;
+	i2c_handle->I2C_TX_Ring_Buffer.Write_Index = 0;
 
 	GPIO_InitTypeDef GPIO_InitStruct;
 
@@ -51,7 +65,6 @@ void Soft_I2C_Master_Add(Soft_I2C_Master_t *i2c_handle)
 	//__HAL_RCC_GPIOD_CLK_ENABLE();
 	//__HAL_RCC_GPIOE_CLK_ENABLE();
 	//__HAL_RCC_GPIOF_CLK_ENABLE();
-
 	/*Configure GPIO pin Output Level */
 
 	HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin,
@@ -78,50 +91,80 @@ void Soft_I2C_Master_Add(Soft_I2C_Master_t *i2c_handle)
 
     }
 
-void Soft_I2C_Master_Start()
+#if (INTERRUPT_MODE)
+static void Soft_I2C_Master_TIM_Start()
     {
     HAL_TIM_Base_Start_IT(SOFT_I2C_MASTER_TIM);
     }
 
-void Soft_I2C_Master_Stop()
+static void Soft_I2C_Master_TIM_Stop()
     {
     HAL_TIM_Base_Stop_IT(SOFT_I2C_MASTER_TIM);
     }
 
-static void Soft_I2C_SDA_High(Soft_I2C_Master_t* i2c_handle)
+/**** TIM configured in cube to generate interrupt *********/
+static void Soft_I2C_Master_TIM_ISR()
     {
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port,
-    			    i2c_handle->GPIO_SDA_Pin, GPIO_PIN_SET);
+
+    Soft_I2C_Master_t *i2c_handle = NULL;
+
+    uint8_t i2c_active_count = 0;
+
+    for (uint8_t i = 0; i < Soft_I2C_Master_Count; i++)
+	{
+
+	/* grab i2c handle from list*/
+	i2c_handle = Soft_I2C_Master_List[i];
+
+	if (i2c_handle->Active_Flag)
+	    {
+	    i2c_active_count++;
+	    Soft_I2C_Master_State_Machine(i2c_handle);
+	    }
+
+	}
+    // if all soft_i2c are idle, disable tim interrupt
+    if (!i2c_active_count)
+	{
+	Soft_I2C_Master_TIM_Stop();
+	}
+
+    }
+#endif
+
+static void Soft_I2C_SDA_High(Soft_I2C_Master_t *i2c_handle)
+    {
+    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,
+	    GPIO_PIN_SET);
     }
 
-
-static void Soft_I2C_SDA_Low(Soft_I2C_Master_t* i2c_handle)
+static void Soft_I2C_SDA_Low(Soft_I2C_Master_t *i2c_handle)
     {
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port,
-    			    i2c_handle->GPIO_SDA_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin,
+	    GPIO_PIN_RESET);
     }
 
-static void Soft_I2C_SCL_High(Soft_I2C_Master_t* i2c_handle)
+static void Soft_I2C_SCL_High(Soft_I2C_Master_t *i2c_handle)
     {
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port,
-    			    i2c_handle->GPIO_SCL_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin,
+	    GPIO_PIN_SET);
     }
 
-
-static void Soft_I2C_SCL_Low(Soft_I2C_Master_t* i2c_handle)
+static void Soft_I2C_SCL_Low(Soft_I2C_Master_t *i2c_handle)
     {
-    HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port,
-    			    i2c_handle->GPIO_SCL_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(i2c_handle->GPIO_SCL_Port, i2c_handle->GPIO_SCL_Pin,
+	    GPIO_PIN_RESET);
     }
 
-static uint8_t Soft_I2C_SDA_Read(Soft_I2C_Master_t* i2c_handle)
+static uint8_t Soft_I2C_SDA_Read(Soft_I2C_Master_t *i2c_handle)
     {
     return HAL_GPIO_ReadPin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin);
     }
 
-static uint8_t Soft_I2C_ACK_Read(Soft_I2C_Master_t* i2c_handle)
+static uint8_t Soft_I2C_ACK_Read(Soft_I2C_Master_t *i2c_handle)
     {
-    return HAL_GPIO_ReadPin(i2c_handle->GPIO_SDA_Port, i2c_handle->GPIO_SDA_Pin)?0:1;
+    return HAL_GPIO_ReadPin(i2c_handle->GPIO_SDA_Port,
+	    i2c_handle->GPIO_SDA_Pin) ? 0 : 1;
     }
 
 static void Soft_I2C_Master_State_Machine(Soft_I2C_Master_t *i2c_handle)
@@ -170,7 +213,6 @@ static void Soft_I2C_Master_State_Machine(Soft_I2C_Master_t *i2c_handle)
 	    if (Soft_I2C_ACK_Read(i2c_handle))
 		{
 		/*ACK Received*/
-
 		if ((i2c_handle->Address_RW) & 0x01)
 		    {
 		    /*read from slave*/
@@ -182,9 +224,10 @@ static void Soft_I2C_Master_State_Machine(Soft_I2C_Master_t *i2c_handle)
 		    i2c_handle->State = Data_Out;
 
 		    /*grab new Current_Byte if available*/
-		    if (Ring_Buffer_Get_Count(&i2c_handle->I2C_TX_Buffer))
+		    if (Ring_Buffer_Get_Count(&i2c_handle->I2C_TX_Ring_Buffer))
 			{
-			Ring_Buffer_Get_Char(&i2c_handle->I2C_TX_Buffer, &i2c_handle->Current_Byte);
+			Ring_Buffer_Get_Char(&i2c_handle->I2C_TX_Ring_Buffer,
+				&i2c_handle->Current_Byte);
 			}
 		    else
 			{
@@ -219,12 +262,12 @@ static void Soft_I2C_Master_State_Machine(Soft_I2C_Master_t *i2c_handle)
 
 		i2c_handle->Bit_Count = 0;
 
-		Ring_Buffer_Put_Char(&i2c_handle->I2C_RX_Buffer, i2c_handle->Current_Byte);
+		Ring_Buffer_Put_Char(&i2c_handle->I2C_RX_Ring_Buffer,
+			i2c_handle->Current_Byte);
 
 		i2c_handle->Current_Byte = 0;
 
 		i2c_handle->Bytes_To_Receive--;
-
 
 		if (i2c_handle->Bytes_To_Receive == 0)
 		    {
@@ -242,7 +285,7 @@ static void Soft_I2C_Master_State_Machine(Soft_I2C_Master_t *i2c_handle)
 	    }
 	else if (i2c_handle->State == Give_ACK)
 	    {
-	    /*give ACK*/
+	    /*next stage*/
 	    i2c_handle->State = Data_In;
 	    }
 	else if (i2c_handle->State == Generate_Stop)
@@ -269,7 +312,7 @@ static void Soft_I2C_Master_State_Machine(Soft_I2C_Master_t *i2c_handle)
 	}
 
     else if (clk_state == 1) /*i2c clock frequency is half of interrupt frequency but symmetric clock waveform*/
-    //if (clk_state == 1) /*i2c clock frequency is same as interrupt frequency but asymmetric clock waveform*/
+	//if (clk_state == 1) /*i2c clock frequency is same as interrupt frequency but asymmetric clock waveform*/
 	{
 
 	clk_state = 0;
@@ -307,7 +350,7 @@ static void Soft_I2C_Master_State_Machine(Soft_I2C_Master_t *i2c_handle)
 	else if (i2c_handle->State == Give_ACK
 		|| i2c_handle->State == Generate_Stop)
 	    {
-	    /*give ACK*/
+	    /* set sda line to low*/
 	    Soft_I2C_SDA_Low(i2c_handle);
 	    }
 
@@ -315,46 +358,17 @@ static void Soft_I2C_Master_State_Machine(Soft_I2C_Master_t *i2c_handle)
 
     }
 
-/**** TIM configured in cube to generate interrupt every 2/clk_freq rate *********/
-/*200khz tim freq for 100khz i2c*/
-void Soft_I2C_Master_TIM_ISR(TIM_HandleTypeDef *htim)
+/* available bytes to read in rx buffer*/
+uint16_t Soft_I2C_Master_Available(Soft_I2C_Master_t *i2c_handle)
     {
-
-    Soft_I2C_Master_t *i2c_handle = NULL;
-
-    uint8_t i2c_active_count = 0;
-
-    for (uint8_t i = 0; i < Soft_I2C_Master_Count; i++)
-	{
-
-	/* grab i2c handle from list*/
-	i2c_handle = Soft_I2C_Master_List[i];
-
-	if (i2c_handle->Active_Flag)
-	    {
-	    i2c_active_count++;
-	    Soft_I2C_Master_State_Machine(i2c_handle);
-	    }
-
-	}
-    // if all soft_i2c are idle, disable tim interrupt
-    if (!i2c_active_count)
-	{
-	HAL_TIM_Base_Stop_IT(SOFT_I2C_MASTER_TIM);
-	}
-
+    return Ring_Buffer_Get_Count(&i2c_handle->I2C_RX_Ring_Buffer);
     }
 
-
-uint16_t Soft_I2C_Master_Read_Available(Soft_I2C_Master_t *i2c_handle)
-    {
-    return Ring_Buffer_Get_Count(&i2c_handle->I2C_RX_Buffer);
-    }
-
+/* read byte from rx buffer*/
 uint8_t Soft_I2C_Master_Read_Byte(Soft_I2C_Master_t *i2c_handle)
     {
     uint8_t temp;
-    Ring_Buffer_Get_Char(&i2c_handle->I2C_RX_Buffer, &temp);
+    Ring_Buffer_Get_Char(&i2c_handle->I2C_RX_Ring_Buffer, &temp);
     return temp;
     }
 
@@ -363,60 +377,28 @@ Soft_I2C_Master_Flags_t Soft_I2C_Master_Get_Status(Soft_I2C_Master_t *i2c_handle
     return i2c_handle->Status_Flag;
     }
 
-
-
-/*set the read pointer in slave to read from*/
-void Soft_I2C_Master_Write_Dummy_IT(Soft_I2C_Master_t *i2c_handle,
-	                            uint8_t slave_address,
-	                            uint16_t register_address,
-	                            uint8_t register_address_size)
+void Soft_I2C_Master_Transmit(Soft_I2C_Master_t *i2c_handle,
+	                      uint8_t slave_address,
+			      uint16_t reg_addr,
+	                      uint8_t reg_addr_size,
+			      uint8_t *bytes,
+			      uint16_t len)
     {
 
     i2c_handle->Address_RW = slave_address;
 
-    if (register_address_size == 2)
+    if (reg_addr_size == 2)
 	{
 	/* msb of register address if address is of two bytes*/
-	Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Buffer,
-		(register_address >> 8));
+	Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Ring_Buffer,
+		(reg_addr >> 8));
 	}
 
-    Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Buffer, register_address);
-
-    i2c_handle->Bit_Count = 0;
-
-    i2c_handle->Current_Byte = 0;
-
-    i2c_handle->State = Generate_Start;
-
-    i2c_handle->Status_Flag = I2C_Busy;
-
-    i2c_handle->Active_Flag = 1;
-
-    /*enable TIM to start transaction */
-    HAL_TIM_Base_Start_IT(SOFT_I2C_MASTER_TIM);
-
-    }
-
-void Soft_I2C_Master_Write_Bytes_IT(Soft_I2C_Master_t *i2c_handle,
-	uint8_t slave_address, uint16_t register_address,
-	uint8_t register_address_size, uint8_t *bytes, uint16_t len)
-    {
-
-    i2c_handle->Address_RW = slave_address;
-
-    if (register_address_size == 2)
-	{
-	/* msb of register address if address is of two bytes*/
-	Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Buffer,
-		(register_address >> 8));
-	}
-
-    Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Buffer, register_address);
+    Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Ring_Buffer, reg_addr);
 
     while (len--)
 	{
-	Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Buffer, *bytes++);
+	Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Ring_Buffer, *bytes++);
 	}
 
     i2c_handle->Bit_Count = 0;
@@ -429,14 +411,38 @@ void Soft_I2C_Master_Write_Bytes_IT(Soft_I2C_Master_t *i2c_handle,
 
     i2c_handle->Active_Flag = 1;
 
+#if (INTERRUPT_MODE)
     /*enable TIM to start transaction */
-    HAL_TIM_Base_Start_IT(SOFT_I2C_MASTER_TIM);
+    Soft_I2C_Master_TIM_Start();
+#else
+    while(i2c_handle->Active_Flag)
+	{
+	Soft_I2C_Master_State_Machine(i2c_handle);
+	Soft_I2C_Delay();
+	}
+#endif
     }
 
-void  Soft_I2C_Master_Read_Request_IT(Soft_I2C_Master_t *i2c_handle,
-	                         uint8_t slave_address,
-				 uint8_t len)
+void Soft_I2C_Master_Receive_Request(Soft_I2C_Master_t *i2c_handle,
+	                             uint8_t slave_address,
+				     uint16_t reg_addr,
+				     uint8_t reg_addr_size,
+			             uint8_t *bytes,
+				     uint16_t len)
     {
+
+    /* send and wait for register address to read from*/
+    Soft_I2C_Master_Transmit(i2c_handle,
+	                     slave_address,
+			     reg_addr,
+			     reg_addr_size,
+			     NULL,
+			     0);
+
+    while(i2c_handle->Active_Flag)
+	{
+	}
+
     i2c_handle->Address_RW = slave_address + 1;
 
     i2c_handle->Bytes_To_Receive = len;
@@ -451,142 +457,21 @@ void  Soft_I2C_Master_Read_Request_IT(Soft_I2C_Master_t *i2c_handle,
 
     i2c_handle->Active_Flag = 1;
 
+#if (INTERRUPT_MODE)
     /*enable TIM to start transaction */
-    HAL_TIM_Base_Start_IT(SOFT_I2C_MASTER_TIM);
-    }
-
-/*check if slave responding*/
-void Soft_I2C_Master_Scan_IT(Soft_I2C_Master_t *i2c_handle,
-	                     uint8_t slave_address)
-    {
-
-    i2c_handle->Address_RW = slave_address;
-
-    i2c_handle->Bit_Count = 0;
-
-    i2c_handle->Current_Byte = 0;
-
-    i2c_handle->State = Generate_Start;
-
-    i2c_handle->Status_Flag = I2C_Busy;
-
-    i2c_handle->Active_Flag = 1;
-
-    /*enable TIM to start transaction */
-    HAL_TIM_Base_Start_IT(SOFT_I2C_MASTER_TIM);
-
-    }
-
-
-
-void Soft_I2C_Delay()
-    {
-    Delay_us(5); /*adjust i2c clk frequency */
-    }
-
-/*set the read pointer in slave to read from*/
-void Soft_I2C_Master_Write_Dummy(Soft_I2C_Master_t *i2c_handle,
-	                         uint8_t slave_address,
-	                         uint16_t register_address,
-	                         uint8_t register_address_size)
-    {
-
-    i2c_handle->Address_RW = slave_address;
-
-    if (register_address_size == 2)
-	{
-	/* msb of register address if address is of two bytes*/
-	Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Buffer,
-		(register_address >> 8));
-	}
-
-    Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Buffer, register_address);
-
-    i2c_handle->Bit_Count = 0;
-
-    i2c_handle->Current_Byte = 0;
-
-    i2c_handle->State = Generate_Start;
-
-    i2c_handle->Status_Flag = I2C_Busy;
-
-    i2c_handle->Active_Flag = 1;
-
+    Soft_I2C_Master_TIM_Start();
+#else
     while(i2c_handle->Active_Flag)
 	{
 	Soft_I2C_Master_State_Machine(i2c_handle);
 	Soft_I2C_Delay();
 	}
-    }
-
-void Soft_I2C_Master_Write_Bytes(Soft_I2C_Master_t *i2c_handle,
-	                         uint8_t slave_address,
-	                         uint16_t register_address,
-				 uint8_t register_address_size,
-				 uint8_t* bytes,
-				 uint16_t len)
-    {
-    i2c_handle->Address_RW = slave_address;
-
-    if (register_address_size == 2)
-	{
-	/* msb of register address if address is of two bytes*/
-	Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Buffer,
-		(register_address >> 8));
-	}
-
-    Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Buffer, register_address);
-
-    while (len--)
-	{
-	Ring_Buffer_Put_Char(&i2c_handle->I2C_TX_Buffer, *bytes++);
-	}
-
-    i2c_handle->Bit_Count = 0;
-
-    i2c_handle->Current_Byte = 0;
-
-    i2c_handle->State = Generate_Start;
-
-    i2c_handle->Status_Flag = I2C_Busy;
-
-    i2c_handle->Active_Flag = 1;
-
-    while(i2c_handle->Active_Flag)
-	{
-	Soft_I2C_Master_State_Machine(i2c_handle);
-	Soft_I2C_Delay();
-	}
-    }
-
-void  Soft_I2C_Master_Read_Request(Soft_I2C_Master_t *i2c_handle,
-	                         uint8_t slave_address,
-				 uint8_t len)
-    {
-    i2c_handle->Address_RW = slave_address + 1;
-
-    i2c_handle->Bytes_To_Receive = len;
-
-    i2c_handle->Bit_Count = 0;
-
-    i2c_handle->Current_Byte = 0;
-
-    i2c_handle->State = Generate_Start;
-
-    i2c_handle->Status_Flag = I2C_Busy;
-
-    i2c_handle->Active_Flag = 1;
-
-    while(i2c_handle->Active_Flag)
-	{
-	Soft_I2C_Master_State_Machine(i2c_handle);
-	Soft_I2C_Delay();
-	}
+#endif
     }
 
 /*check if slave responding*/
 void Soft_I2C_Master_Scan(Soft_I2C_Master_t *i2c_handle,
-	                  uint8_t slave_address)
+	uint8_t slave_address)
     {
 
     i2c_handle->Address_RW = slave_address;
@@ -601,9 +486,14 @@ void Soft_I2C_Master_Scan(Soft_I2C_Master_t *i2c_handle,
 
     i2c_handle->Active_Flag = 1;
 
+#if (INTERRUPT_MODE)
+    /*enable TIM to start transaction */
+    Soft_I2C_Master_TIM_Start();
+#else
     while(i2c_handle->Active_Flag)
 	{
 	Soft_I2C_Master_State_Machine(i2c_handle);
 	Soft_I2C_Delay();
 	}
+#endif
     }
