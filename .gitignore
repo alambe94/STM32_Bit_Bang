@@ -53,3 +53,8 @@ dkms.conf
 
 Debug/
 build/
+doc/
+Release/
+release/
+.vscode/
+
