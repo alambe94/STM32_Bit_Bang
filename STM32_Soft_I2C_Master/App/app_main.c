@@ -23,6 +23,11 @@ void App_Main()
     /* redirect printf to uart */
     setvbuf(stdout, NULL, _IONBF, 0);
 
+#if (I2C_USE_INTERRUPT_MODE)
+    extern void Soft_I2C_Master_TIM_Init();
+    Soft_I2C_Master_TIM_Init();
+#endif
+
     extern void Soft_I2C1_Init();
     Soft_I2C1_Init();
 
